@@ -10,8 +10,9 @@ if [[ "${1:-}" == "universal" ]]; then
   ARCH_FLAGS=(--arch arm64 --arch x86_64)
 fi
 
-swift build -c release --product NoteIt "${ARCH_FLAGS[@]}"
-BIN_DIR="$(swift build -c release --show-bin-path "${ARCH_FLAGS[@]}")"
+# ${arr[@]+...} keeps macOS' bash 3.2 happy with an empty array under `set -u`.
+swift build -c release --product NoteIt ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c release --show-bin-path ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"})"
 
 APP="build/NoteIt.app"
 rm -rf "$APP"

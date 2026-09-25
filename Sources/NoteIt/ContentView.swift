@@ -18,24 +18,24 @@ struct ContentView: View {
             if columnVisibility == .detailOnly { columnVisibility = .all }
         }
         .confirmationDialog(
-            "„\(model.deleteTarget?.title ?? "")“ in den Papierkorb legen?",
+            L10n.tr(.confirmTrashFormat, model.deleteTarget?.title ?? ""),
             isPresented: Binding(
                 get: { model.deleteTarget != nil },
                 set: { if !$0 { model.deleteTarget = nil } }
             ),
             presenting: model.deleteTarget
         ) { note in
-            Button("In den Papierkorb", role: .destructive) { model.delete(note) }
-            Button("Abbrechen", role: .cancel) {}
+            Button(L10n.tr(.moveToTrashButton), role: .destructive) { model.delete(note) }
+            Button(L10n.tr(.cancel), role: .cancel) {}
         }
         .alert(
-            "Fehler",
+            L10n.tr(.error),
             isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { if !$0 { model.errorMessage = nil } }
             )
         ) {
-            Button("OK") {}
+            Button(L10n.tr(.ok)) {}
         } message: {
             Text(model.errorMessage ?? "")
         }
@@ -57,28 +57,28 @@ struct ContentView: View {
             Button {
                 model.newNote()
             } label: {
-                Label("Neue Notiz", systemImage: "square.and.pencil")
+                Label(L10n.tr(.newNote), systemImage: "square.and.pencil")
             }
-            .help("Neue Notiz (⌘N)")
+            .help(L10n.tr(.newNoteHelp))
 
-            Picker("Ansicht", selection: $model.viewMode) {
+            Picker(L10n.tr(.view), selection: $model.viewMode) {
                 ForEach(ViewMode.allCases) { mode in
                     Label(mode.label, systemImage: mode.symbol).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
             .labelStyle(.iconOnly)
-            .help("Schreiben · Geteilt · Vorschau (⌘1 · ⌘2 · ⌘3)")
+            .help(L10n.tr(.viewModeHelp))
 
             if model.simplenoteAccount != nil {
                 Button {
                     model.syncNow()
                 } label: {
-                    Label("Synchronisieren", systemImage: "arrow.triangle.2.circlepath")
+                    Label(L10n.tr(.sync), systemImage: "arrow.triangle.2.circlepath")
                         .symbolEffect(.pulse, isActive: model.isSyncing)
                 }
                 .disabled(model.isSyncing || !model.isSimplenoteConnected)
-                .help(model.syncStatus.isEmpty ? "Mit Simplenote synchronisieren (⌘⇧S)" : model.syncStatus)
+                .help(model.syncStatus.isEmpty ? L10n.tr(.syncHelp) : model.syncStatus)
             }
         }
     }
@@ -95,16 +95,16 @@ struct NoteSidebar: View {
                 NoteRow(note: note)
                     .tag(note.id)
                     .contextMenu {
-                        Button("Umbenennen") {
+                        Button(L10n.tr(.rename)) {
                             model.selectedID = note.id
                             model.requestTitleEditing()
                         }
-                        Button("Im Finder zeigen") {
+                        Button(L10n.tr(.showInFinder)) {
                             model.selectedID = note.id
                             model.revealSelectedInFinder()
                         }
                         Divider()
-                        Button("In den Papierkorb legen …", role: .destructive) { model.deleteTarget = note }
+                        Button(L10n.tr(.moveToTrash), role: .destructive) { model.deleteTarget = note }
                     }
             }
         }
@@ -119,19 +119,19 @@ struct NoteSidebar: View {
         if model.visibleNotes.isEmpty {
             if model.query.trimmingCharacters(in: .whitespaces).isEmpty {
                 ContentUnavailableView {
-                    Label("Noch keine Notizen", systemImage: "note.text")
+                    Label(L10n.tr(.noNotesTitle), systemImage: "note.text")
                 } description: {
-                    Text("Tippe oben einen Titel und drücke ⏎ – oder klicke auf „Neue Notiz“.")
+                    Text(L10n.tr(.noNotesDescription))
                 } actions: {
-                    Button("Neue Notiz") { model.newNote() }
+                    Button(L10n.tr(.newNote)) { model.newNote() }
                 }
             } else {
                 ContentUnavailableView {
-                    Label("Keine Treffer", systemImage: "magnifyingglass")
+                    Label(L10n.tr(.noMatchesTitle), systemImage: "magnifyingglass")
                 } description: {
-                    Text("Mit ⏎ legst du „\(model.query)“ als neue Notiz an.")
+                    Text(L10n.tr(.noMatchesDescriptionFormat, model.query))
                 } actions: {
-                    Button("„\(model.query)“ anlegen") { model.submitSearch() }
+                    Button(L10n.tr(.createFormat, model.query)) { model.submitSearch() }
                 }
             }
         }
@@ -158,9 +158,9 @@ struct NoteSidebar: View {
     private var countLabel: String {
         let total = model.notes.count
         if model.query.trimmingCharacters(in: .whitespaces).isEmpty {
-            return total == 1 ? "1 Notiz" : "\(total) Notizen"
+            return total == 1 ? L10n.tr(.noteCountOne) : L10n.tr(.noteCountOther, total)
         }
-        return "\(model.visibleNotes.count) von \(total)"
+        return L10n.tr(.filteredCountFormat, model.visibleNotes.count, total)
     }
 }
 
@@ -176,7 +176,7 @@ struct NoteRow: View {
                 Text(ShortDate.string(for: note.modificationDate))
                     .foregroundStyle(.secondary)
                     .fixedSize()
-                Text(note.snippet.isEmpty ? "Kein weiterer Text" : note.snippet)
+                Text(note.snippet.isEmpty ? L10n.tr(.noAdditionalText) : note.snippet)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
@@ -204,11 +204,11 @@ struct DetailView: View {
             .background(Color(nsColor: .textBackgroundColor))
         } else {
             ContentUnavailableView {
-                Label("Keine Notiz ausgewählt", systemImage: "square.and.pencil")
+                Label(L10n.tr(.noSelectionTitle), systemImage: "square.and.pencil")
             } description: {
-                Text("Wähle links eine Notiz aus oder lege mit ⌘N eine neue an.")
+                Text(L10n.tr(.noSelectionDescription))
             } actions: {
-                Button("Neue Notiz") { model.newNote() }
+                Button(L10n.tr(.newNote)) { model.newNote() }
                     .buttonStyle(.borderedProminent)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -224,9 +224,9 @@ struct DetailView: View {
         case .split:
             HSplitView {
                 editor(for: note)
-                    .frame(minWidth: 240)
+                    .frame(minWidth: 180, maxWidth: .infinity)
                 preview(for: note)
-                    .frame(minWidth: 240)
+                    .frame(minWidth: 180, maxWidth: .infinity)
             }
         case .preview:
             preview(for: note)
@@ -269,7 +269,7 @@ struct TitleHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            TextField("Titel", text: $draft)
+            TextField(L10n.tr(.titlePlaceholder), text: $draft)
                 .textFieldStyle(.plain)
                 .font(.system(size: 26, weight: .bold))
                 .focused($isFocused)
@@ -308,7 +308,7 @@ struct TitleHeader: View {
 
     private var subtitle: String {
         let words = MarkdownSyntax.wordCount(of: note.body)
-        let wordLabel = words == 1 ? "1 Wort" : "\(words) Wörter"
+        let wordLabel = words == 1 ? L10n.tr(.wordCountOne) : L10n.tr(.wordCountOther, words)
         return "\(ShortDate.long(for: note.modificationDate)) · \(wordLabel) · \(note.fileExtension.uppercased())"
     }
 
@@ -344,52 +344,51 @@ struct TitleHeader: View {
 
 // MARK: - Dates
 
+/// Compact dates in the app language: "08:40", "Yesterday", "Tuesday", "12/03/25".
 enum ShortDate {
-    private static let time: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
+    private static var cache: [String: DateFormatter] = [:]
 
-    private static let weekday: DateFormatter = {
+    private static func formatter(_ key: String, configure: (DateFormatter) -> Void) -> DateFormatter {
+        let cacheKey = "\(L10n.language.rawValue)-\(key)"
+        if let formatter = cache[cacheKey] { return formatter }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "EEEE"
+        formatter.locale = L10n.language.locale
+        configure(formatter)
+        cache[cacheKey] = formatter
         return formatter
-    }()
+    }
 
-    private static let date: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "dd.MM.yy"
-        return formatter
-    }()
+    private static var time: DateFormatter {
+        formatter("time") { $0.dateStyle = .none; $0.timeStyle = .short }
+    }
 
-    private static let longDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter
-    }()
+    private static var weekday: DateFormatter {
+        formatter("weekday") { $0.setLocalizedDateFormatFromTemplate("EEEE") }
+    }
 
-    /// Apple-Notes-style compact date: "08:40", "Gestern", "Dienstag", "12.03.25".
+    private static var date: DateFormatter {
+        formatter("date") { $0.dateStyle = .short; $0.timeStyle = .none }
+    }
+
+    private static var longDate: DateFormatter {
+        formatter("long") { $0.dateStyle = .long; $0.timeStyle = .short }
+    }
+
     static func string(for value: Date, now: Date = Date()) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(value) { return time.string(from: value) }
-        if calendar.isDateInYesterday(value) { return "Gestern" }
+        if calendar.isDateInYesterday(value) { return L10n.tr(.yesterday) }
         if let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: value), to: calendar.startOfDay(for: now)).day,
            days < 7, days > 0 {
-            return weekday.string(from: value)
+            return weekday.string(from: value).capitalized(with: L10n.language.locale)
         }
         return date.string(from: value)
     }
 
     static func long(for value: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(value) { return "Heute, \(time.string(from: value))" }
-        if calendar.isDateInYesterday(value) { return "Gestern, \(time.string(from: value))" }
+        if calendar.isDateInToday(value) { return L10n.tr(.todayAtFormat, time.string(from: value)) }
+        if calendar.isDateInYesterday(value) { return L10n.tr(.yesterdayAtFormat, time.string(from: value)) }
         return longDate.string(from: value)
     }
 }

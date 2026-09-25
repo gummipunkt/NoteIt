@@ -8,11 +8,11 @@ public enum NoteStoreError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .noteNotFound(let name):
-            return "Die Notiz „\(name)“ wurde nicht gefunden."
+            return L10n.tr(.noteNotFoundFormat, name)
         case .titleAlreadyExists(let title):
-            return "Eine Notiz mit dem Titel „\(title)“ existiert bereits."
+            return L10n.tr(.titleExistsFormat, title)
         case .unreadableFile(let name):
-            return "Die Datei „\(name)“ konnte nicht gelesen werden."
+            return L10n.tr(.unreadableFileFormat, name)
         }
     }
 }
@@ -186,6 +186,6 @@ public struct NoteFileStore: Sendable {
             .trimmingCharacters(in: .whitespaces)
         while result.hasPrefix(".") { result.removeFirst() }
         if result.count > 200 { result = String(result.prefix(200)).trimmingCharacters(in: .whitespaces) }
-        return result.isEmpty ? "Unbenannt" : result
+        return result.isEmpty ? L10n.tr(.untitled) : result
     }
 }

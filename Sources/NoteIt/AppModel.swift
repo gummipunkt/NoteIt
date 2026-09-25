@@ -13,9 +13,9 @@ enum ViewMode: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .edit: return "Schreiben"
-        case .split: return "Geteilt"
-        case .preview: return "Vorschau"
+        case .edit: return L10n.tr(.viewEdit)
+        case .split: return L10n.tr(.viewSplit)
+        case .preview: return L10n.tr(.viewPreview)
         }
     }
 
@@ -37,6 +37,7 @@ final class AppModel: ObservableObject {
         static let folderPath = "notesFolderPath"
         static let defaultExtension = "defaultExtension"
         static let viewMode = "viewMode"
+        static let appLanguage = "appLanguage"
         static let didOfferWelcomeNote = "didOfferWelcomeNote"
         static let simplenoteEmail = "simplenoteEmail"
         static let autoSync = "simplenoteAutoSync"
@@ -94,6 +95,7 @@ final class AppModel: ObservableObject {
 
     private init() {
         let defaults = UserDefaults.standard
+        Self.applyLanguage(code: defaults.string(forKey: Keys.appLanguage) ?? "")
         // NOTEIT_NOTES_DIR overrides the folder for one run (used for demos and CI screenshots).
         let environment = ProcessInfo.processInfo.environment
         let path = environment["NOTEIT_NOTES_DIR"] ?? defaults.string(forKey: Keys.folderPath)
@@ -121,9 +123,32 @@ final class AppModel: ObservableObject {
     private func createWelcomeNoteIfNeeded() {
         guard notes.isEmpty, !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
         defaults.set(true, forKey: Keys.didOfferWelcomeNote)
-        if let note = try? store.create(title: "Willkommen bei NoteIt", body: WelcomeNote.body, fileExtension: "md") {
+        if let note = try? store.create(title: L10n.tr(.welcomeTitle), body: WelcomeNote.body(for: L10n.language), fileExtension: "md") {
             notes.append(note)
         }
+    }
+
+    // MARK: - Language
+
+    /// The language picked in Settings ("" follows the system).
+    var languageCode: String {
+        get { defaults.string(forKey: Keys.appLanguage) ?? "" }
+        set {
+            defaults.set(newValue, forKey: Keys.appLanguage)
+            // AppKit's own menu items (Edit, Window, …) follow AppleLanguages after a restart.
+            if newValue.isEmpty {
+                defaults.removeObject(forKey: "AppleLanguages")
+            } else {
+                defaults.set([newValue], forKey: "AppleLanguages")
+            }
+            Self.applyLanguage(code: newValue)
+            objectWillChange.send()
+            updateVisibleNotes()
+        }
+    }
+
+    private static func applyLanguage(code: String) {
+        L10n.language = AppLanguage(rawValue: code) ?? .preferred()
     }
 
     static var defaultFolder: URL {
@@ -177,14 +202,14 @@ final class AppModel: ObservableObject {
     }
 
     /// ⌘N / the "new note" button: use the search text as title if there is one,
-    /// otherwise create "Neue Notiz" and put the cursor into its title.
+    /// otherwise create a "New Note" and put the cursor into its title.
     func newNote() {
         let title = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !title.isEmpty {
             submitSearch()
             return
         }
-        if createNote(title: "Neue Notiz") != nil {
+        if createNote(title: L10n.tr(.newNote)) != nil {
             titleFocusPending = true
         }
     }
@@ -470,18 +495,19 @@ final class AppModel: ObservableObject {
         saveNow()
         syncSoonTask?.cancel()
         isSyncing = true
-        syncStatus = "Synchronisiere …"
+        syncStatus = L10n.tr(.syncing)
         Task {
             do {
                 let report = try await engine.sync()
-                syncStatus = "Simplenote: \(report.summary) · \(Date().formatted(date: .omitted, time: .shortened))"
+                let time = Date().formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(L10n.language.locale))
+                syncStatus = L10n.tr(.syncStatusFormat, report.summary, time)
                 if !report.failures.isEmpty {
                     NSLog("NoteIt sync failures: %@", report.failures.joined(separator: "\n"))
                 }
             } catch SimplenoteError.unauthorized {
-                syncStatus = "Simplenote: Sitzung abgelaufen – bitte in den Einstellungen neu anmelden"
+                syncStatus = L10n.tr(.syncSessionExpired)
             } catch {
-                syncStatus = "Simplenote: \(error.localizedDescription)"
+                syncStatus = L10n.tr(.syncErrorFormat, error.localizedDescription)
             }
             isSyncing = false
             reloadFromDisk()

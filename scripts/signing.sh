@@ -17,9 +17,9 @@ find_signing_identity() {
 
 warn_ad_hoc() {
   cat >&2 <<'MSG'
-Hinweis: Kein Apple-Development-Zertifikat gefunden, die App wird nur ad hoc signiert.
-Dann fragt der Schlüsselbund nach jedem Neubau erneut nach dem Simplenote-Zugang.
-Abhilfe (kostenlos): Xcode → Einstellungen → Accounts → Apple-ID hinzufügen →
-„Manage Certificates…“ → „+“ → „Apple Development“. Danach dieses Skript erneut starten.
+Note: no Apple Development certificate found, signing ad hoc only.
+The Keychain will then ask for the Simplenote token again after every rebuild.
+Fix (free): Xcode → Settings → Accounts → add your Apple ID →
+"Manage Certificates…" → "+" → "Apple Development". Then run this script again.
 MSG
 }

@@ -11,9 +11,9 @@ enum EditorFontStyle: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .system: return "System (SF Pro)"
-        case .serif: return "Serif (New York)"
-        case .mono: return "Festbreite (SF Mono)"
+        case .system: return L10n.tr(.fontSystem)
+        case .serif: return L10n.tr(.fontSerif)
+        case .mono: return L10n.tr(.fontMono)
         }
     }
 
@@ -216,7 +216,7 @@ struct MarkdownHighlighter: Equatable {
     var baseAttributes: [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = 1.3
-        paragraph.paragraphSpacing = fontSize * 0.35
+        paragraph.paragraphSpacing = fontSize * 0.15
         return [
             .font: baseFont,
             .foregroundColor: NSColor.textColor,

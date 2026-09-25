@@ -34,6 +34,12 @@ for size in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 
+# Declare the UI languages (texts live in NoteItCore/L10n.swift). The empty .lproj
+# folders let macOS offer them under System Settings → Language & Region → Applications
+# and localize AppKit's standard menu items.
+LANGUAGES="en de fr it es"
+for lang in $LANGUAGES; do mkdir -p "$APP/Contents/Resources/$lang.lproj"; done
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,7 +64,15 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHumanReadableCopyright</key>
     <string>© ${YEAR} ${AUTHOR} · GPL-3.0</string>
     <key>CFBundleDevelopmentRegion</key>
-    <string>de</string>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>de</string>
+        <string>fr</string>
+        <string>it</string>
+        <string>es</string>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSApplicationCategoryType</key>
@@ -76,9 +90,9 @@ source scripts/signing.sh
 IDENTITY="$(find_signing_identity)"
 if [[ -n "$IDENTITY" ]]; then
   codesign --force --sign "$IDENTITY" "$APP"
-  echo "Signiert mit: $IDENTITY"
+  echo "Signed with: $IDENTITY"
 else
   codesign --force --sign - "$APP"
   warn_ad_hoc
 fi
-echo "Fertig: $APP (Version $VERSION, Build $BUILD)"
+echo "Done: $APP (version $VERSION, build $BUILD)"

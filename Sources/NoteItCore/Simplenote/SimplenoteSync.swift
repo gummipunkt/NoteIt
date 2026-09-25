@@ -62,12 +62,12 @@ public struct SyncReport: Equatable, Sendable {
 
     public var summary: String {
         var parts: [String] = []
-        if downloaded > 0 { parts.append("\(downloaded) empfangen") }
-        if uploaded > 0 { parts.append("\(uploaded) gesendet") }
-        if deletedLocally + deletedRemotely > 0 { parts.append("\(deletedLocally + deletedRemotely) gelöscht") }
-        if conflicts > 0 { parts.append("\(conflicts) Konflikt(e)") }
-        if !failures.isEmpty { parts.append("\(failures.count) Fehler") }
-        return parts.isEmpty ? "Alles aktuell" : parts.joined(separator: ", ")
+        if downloaded > 0 { parts.append(L10n.tr(.syncReceivedFormat, downloaded)) }
+        if uploaded > 0 { parts.append(L10n.tr(.syncSentFormat, uploaded)) }
+        if deletedLocally + deletedRemotely > 0 { parts.append(L10n.tr(.syncDeletedFormat, deletedLocally + deletedRemotely)) }
+        if conflicts > 0 { parts.append(L10n.tr(.syncConflictsFormat, conflicts)) }
+        if !failures.isEmpty { parts.append(L10n.tr(.syncErrorsFormat, failures.count)) }
+        return parts.isEmpty ? L10n.tr(.syncUpToDate) : parts.joined(separator: ", ")
     }
 }
 
@@ -241,7 +241,7 @@ public actor SimplenoteSyncEngine {
                 throw error
             } catch {
                 // The server could not merge: keep our text as a separate note and take theirs.
-                let copy = try store.create(title: local.title + " (Konflikt)", body: local.body, fileExtension: local.fileExtension)
+                let copy = try store.create(title: local.title + L10n.tr(.conflictSuffix), body: local.body, fileExtension: local.fileExtension)
                 localByName[copy.fileName] = copy
                 try applyRemote(remote, to: local, entry: entry, localByName: &localByName)
             }
@@ -344,7 +344,7 @@ public enum SyncConflictError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .fileChangedDuringSync(let name):
-            return "„\(name)“ wurde während der Synchronisation geändert und wird beim nächsten Mal abgeglichen."
+            return L10n.tr(.changedDuringSyncFormat, name)
         }
     }
 }

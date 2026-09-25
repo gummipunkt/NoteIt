@@ -1,10 +1,11 @@
 import AppKit
+import NoteItCore
 
 /// Version, copyright and contact details. `scripts/build-app.sh` reads `version`
 /// from this file for the app bundle's Info.plist, so this is the single source of truth.
 enum AppInfo {
     static let name = "NoteIt"
-    static let version = "0.2.1"
+    static let version = "0.3.0"
     static let author = "Patrick Walter"
     static let copyrightYear = "2026"
     static let website = URL(string: "https://www.gummipunkt.eu")!
@@ -21,8 +22,8 @@ enum AppInfo {
     }
 
     static var versionLabel: String {
-        if let build { return "Version \(version) (\(build))" }
-        return "Version \(version)"
+        if let build { return L10n.tr(.versionBuildFormat, version, build) }
+        return L10n.tr(.versionFormat, version)
     }
 
     /// Shows the standard About panel with version, copyright and contact links.
@@ -35,7 +36,7 @@ enum AppInfo {
             .foregroundColor: NSColor.secondaryLabelColor,
             .paragraphStyle: paragraph,
         ]
-        let credits = NSMutableAttributedString(string: "Schnelle Notizen im Stil von nvALT.\n\n", attributes: base)
+        let credits = NSMutableAttributedString(string: L10n.tr(.tagline) + "\n\n", attributes: base)
         var link = base
         link[.link] = website
         credits.append(NSAttributedString(string: "www.gummipunkt.eu", attributes: link))
@@ -45,10 +46,9 @@ enum AppInfo {
         credits.append(NSAttributedString(string: "\n", attributes: base))
         link[.link] = repository
         credits.append(NSAttributedString(string: "github.com/gummipunkt/NoteIt", attributes: link))
-        credits.append(NSAttributedString(string: "\n\nFreie Software unter der ", attributes: base))
+        credits.append(NSAttributedString(string: "\n\n" + L10n.tr(.freeSoftwarePrefix) + " ", attributes: base))
         link[.link] = licenseURL
         credits.append(NSAttributedString(string: "GPL 3.0", attributes: link))
-        credits.append(NSAttributedString(string: ".", attributes: base))
 
         var options: [NSApplication.AboutPanelOptionKey: Any] = [
             .applicationName: name,

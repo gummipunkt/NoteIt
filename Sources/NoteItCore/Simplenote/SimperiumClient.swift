@@ -35,13 +35,13 @@ public enum SimplenoteError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            return "Anmeldung bei Simplenote fehlgeschlagen. Bitte E-Mail und Passwort prüfen."
+            return L10n.tr(.simplenoteInvalidCredentials)
         case .unauthorized:
-            return "Die Simplenote-Sitzung ist abgelaufen. Bitte erneut anmelden."
+            return L10n.tr(.simplenoteUnauthorized)
         case .http(let status, let message):
-            return "Simplenote-Serverfehler (\(status))\(message.isEmpty ? "" : ": \(message)")"
+            return L10n.tr(.simplenoteServerErrorFormat, status, message.isEmpty ? "" : ": \(message)")
         case .invalidResponse:
-            return "Unerwartete Antwort vom Simplenote-Server."
+            return L10n.tr(.simplenoteInvalidResponse)
         }
     }
 }

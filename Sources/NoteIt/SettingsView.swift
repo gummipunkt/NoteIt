@@ -3,19 +3,23 @@ import NoteItCore
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject private var model: AppModel
+
     var body: some View {
         TabView {
             GeneralSettings()
-                .tabItem { Label("Allgemein", systemImage: "gearshape") }
+                .tabItem { Label(L10n.tr(.settingsGeneral), systemImage: "gearshape") }
             StorageSettings()
-                .tabItem { Label("Speicherort", systemImage: "folder") }
+                .tabItem { Label(L10n.tr(.settingsStorage), systemImage: "folder") }
             SimplenoteSettings()
                 .tabItem { Label("Simplenote", systemImage: "arrow.triangle.2.circlepath") }
             AboutSettings()
-                .tabItem { Label("Über", systemImage: "info.circle") }
+                .tabItem { Label(L10n.tr(.settingsAbout), systemImage: "info.circle") }
         }
         .frame(width: 520)
         .padding(20)
+        // Rebuild all texts when the language changes.
+        .id(L10n.language)
     }
 }
 
@@ -27,18 +31,29 @@ private struct GeneralSettings: View {
 
     var body: some View {
         Form {
-            Picker("Neue Notizen als:", selection: $model.defaultExtension) {
-                Text("Markdown (.md)").tag("md")
-                Text("Text (.txt)").tag("txt")
+            Picker(L10n.tr(.languageLabel), selection: Binding(
+                get: { model.languageCode },
+                set: { model.languageCode = $0 }
+            )) {
+                Text(L10n.tr(.languageSystem)).tag("")
+                Divider()
+                ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0.rawValue) }
             }
-            Picker("Ansicht:", selection: $model.viewMode) {
+            Text(L10n.tr(.languageRestartHint))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Picker(L10n.tr(.newNotesAs), selection: $model.defaultExtension) {
+                Text(L10n.tr(.formatMarkdown)).tag("md")
+                Text(L10n.tr(.formatText)).tag("txt")
+            }
+            Picker(L10n.tr(.viewLabel), selection: $model.viewMode) {
                 ForEach(ViewMode.allCases) { Text($0.label).tag($0) }
             }
-            Picker("Schrift:", selection: $fontStyle) {
+            Picker(L10n.tr(.fontLabel), selection: $fontStyle) {
                 ForEach(EditorFontStyle.allCases) { Text($0.label).tag($0) }
             }
-            Stepper("Schriftgröße: \(Int(fontSize)) pt", value: $fontSize, in: 10...32)
-            Toggle("Schmale Textspalte (angenehmer zu lesen)", isOn: $narrowColumn)
+            Stepper(L10n.tr(.fontSizeFormat, Int(fontSize)), value: $fontSize, in: 10...32)
+            Toggle(L10n.tr(.narrowColumn), isOn: $narrowColumn)
         }
     }
 }
@@ -48,7 +63,7 @@ private struct StorageSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Notizordner").font(.headline)
+            Text(L10n.tr(.notesFolder)).font(.headline)
             HStack {
                 Text(model.folderURL.path)
                     .font(.system(.body, design: .monospaced))
@@ -56,14 +71,14 @@ private struct StorageSettings: View {
                     .truncationMode(.middle)
                     .textSelection(.enabled)
                 Spacer()
-                Button("Im Finder zeigen") {
+                Button(L10n.tr(.showInFinder)) {
                     NSWorkspace.shared.activateFileViewerSelecting([model.folderURL])
                 }
             }
             HStack {
-                Button("Anderen Ordner wählen …", action: chooseFolder)
+                Button(L10n.tr(.chooseOtherFolder), action: chooseFolder)
                 ForEach(CloudFolders.detected()) { cloud in
-                    Button("In \(cloud.name) speichern") {
+                    Button(L10n.tr(.storeInFormat, cloud.name)) {
                         model.changeFolder(to: cloud.url.appendingPathComponent("NoteIt", isDirectory: true))
                     }
                     .help(cloud.url.path)
@@ -72,16 +87,12 @@ private struct StorageSettings: View {
 
             Divider()
 
-            Text("Sync mit Dropbox und Google Drive").font(.headline)
-            Text("""
-            Jede Notiz ist eine normale .md- oder .txt-Datei. Legst du den Notizordner in deinen \
-            Dropbox- oder Google-Drive-Ordner, synchronisiert die jeweilige Desktop-App die Notizen \
-            automatisch mit deinen anderen Geräten. NoteIt erkennt Änderungen von außen sofort.
-            """)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.tr(.cloudSyncTitle)).font(.headline)
+            Text(L10n.tr(.cloudSyncExplanation))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             if CloudFolders.detected().isEmpty {
-                Text("Kein Dropbox- oder Google-Drive-Ordner gefunden. Installiere die Desktop-App des Dienstes und wähle dann den Ordner aus.")
+                Text(L10n.tr(.noCloudFolderFound))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -96,8 +107,8 @@ private struct StorageSettings: View {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.directoryURL = model.folderURL
-        panel.prompt = "Auswählen"
-        panel.message = "Ordner für deine Notizen wählen"
+        panel.prompt = L10n.tr(.choose)
+        panel.message = L10n.tr(.chooseFolderMessage)
         if panel.runModal() == .OK, let url = panel.url {
             model.changeFolder(to: url)
         }
@@ -114,25 +125,25 @@ private struct SimplenoteSettings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let account = model.simplenoteAccount {
-                LabeledContent("Angemeldet als", value: account)
-                Toggle("Automatisch synchronisieren (alle 3 Minuten und nach Änderungen)", isOn: $model.autoSync)
+                LabeledContent(L10n.tr(.signedInAs), value: account)
+                Toggle(L10n.tr(.autoSync), isOn: $model.autoSync)
                 if !model.syncStatus.isEmpty {
                     Text(model.syncStatus)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
                 HStack {
-                    Button("Jetzt synchronisieren") { model.syncNow() }
+                    Button(L10n.tr(.syncNow)) { model.syncNow() }
                         .disabled(model.isSyncing || !model.isSimplenoteConnected)
                     if model.isSyncing { ProgressView().controlSize(.small) }
                     Spacer()
-                    Button("Abmelden", role: .destructive) { model.signOutOfSimplenote() }
+                    Button(L10n.tr(.signOut), role: .destructive) { model.signOutOfSimplenote() }
                 }
             } else {
-                Text("Mit Simplenote verbinden").font(.headline)
-                TextField("E-Mail", text: $email)
+                Text(L10n.tr(.connectSimplenote)).font(.headline)
+                TextField(L10n.tr(.email), text: $email)
                     .textFieldStyle(.roundedBorder)
-                SecureField("Passwort", text: $password)
+                SecureField(L10n.tr(.password), text: $password)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(signIn)
                 if let error {
@@ -141,7 +152,7 @@ private struct SimplenoteSettings: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 HStack {
-                    Button("Anmelden", action: signIn)
+                    Button(L10n.tr(.signIn), action: signIn)
                         .keyboardShortcut(.defaultAction)
                         .disabled(email.isEmpty || password.isEmpty || isSigningIn)
                     if isSigningIn { ProgressView().controlSize(.small) }
@@ -150,14 +161,10 @@ private struct SimplenoteSettings: View {
 
             Divider()
 
-            Text("""
-            Die erste Zeile einer Simplenote-Notiz wird zum Titel (Dateiname), der Rest zum Inhalt. \
-            Das Passwort wird nicht gespeichert, nur ein Zugriffstoken im Schlüsselbund. \
-            In Simplenote gelöschte Notizen landen hier im Papierkorb von macOS.
-            """)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.tr(.simplenoteExplanation))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -193,12 +200,12 @@ private struct AboutSettings: View {
             HStack(spacing: 16) {
                 Link("www.gummipunkt.eu", destination: AppInfo.website)
                 Link(AppInfo.email, destination: URL(string: "mailto:\(AppInfo.email)")!)
-                Link("Quellcode auf GitHub", destination: AppInfo.repository)
+                Link(L10n.tr(.sourceCodeOnGitHub), destination: AppInfo.repository)
             }
-            Text("Freie Software unter der GNU General Public License v3.0.")
+            Text(L10n.tr(.freeSoftwareGPL))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Link("Lizenztext lesen", destination: AppInfo.licenseURL)
+            Link(L10n.tr(.readLicense), destination: AppInfo.licenseURL)
                 .font(.callout)
         }
         .frame(maxWidth: .infinity)

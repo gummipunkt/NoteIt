@@ -1,4 +1,5 @@
 import Foundation
+import NoteItCore
 import Security
 
 /// Stores the Simplenote access token in the macOS Keychain.
@@ -12,7 +13,7 @@ enum Keychain {
             switch self {
             case .unexpectedStatus(let status):
                 let message = SecCopyErrorMessageString(status, nil) as String? ?? "\(status)"
-                return "Schlüsselbund-Fehler: \(message)"
+                return L10n.tr(.keychainErrorFormat, message)
             }
         }
     }

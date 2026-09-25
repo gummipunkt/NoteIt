@@ -93,6 +93,7 @@ final class SimplenoteSyncTests: XCTestCase {
         store = NoteFileStore(folder: folder.appendingPathComponent("notes"))
         server = FakeSimperium()
         engine = makeEngine()
+        L10n.language = .de
     }
 
     override func tearDownWithError() throws {

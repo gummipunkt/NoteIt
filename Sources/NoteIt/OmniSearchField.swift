@@ -1,4 +1,5 @@
 import AppKit
+import NoteItCore
 import SwiftUI
 
 /// The nvALT search/create field: typing filters, ↑/↓ move through the list,
@@ -12,7 +13,7 @@ struct OmniSearchField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField()
-        field.placeholderString = "Suchen oder Titel eingeben und ⏎ drücken"
+        field.placeholderString = L10n.tr(.searchPlaceholder)
         field.font = .systemFont(ofSize: 13)
         field.delegate = context.coordinator
         field.sendsSearchStringImmediately = true
@@ -24,6 +25,8 @@ struct OmniSearchField: NSViewRepresentable {
 
     func updateNSView(_ field: NSSearchField, context: Context) {
         context.coordinator.parent = self
+        let placeholder = L10n.tr(.searchPlaceholder)
+        if field.placeholderString != placeholder { field.placeholderString = placeholder }
         if field.stringValue != text {
             field.stringValue = text
         }

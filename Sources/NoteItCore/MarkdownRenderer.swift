@@ -17,7 +17,7 @@ public enum MarkdownRenderer {
         let accentCSS = accentColor.map { ":root { --accent: \($0); }" } ?? ""
         return """
         <!DOCTYPE html>
-        <html>
+        <html lang="\(L10n.language.rawValue)">
         <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -133,8 +133,12 @@ public enum MarkdownRenderer {
     li { margin: 0.25em 0; }
     li::marker { color: var(--accent); }
     li > p { margin: 0.2em 0; }
-    input[type=checkbox] { accent-color: var(--accent); margin: 0 0.45em 0 -1.3em; transform: translateY(1px); }
-    li:has(> input[type=checkbox]) { list-style: none; }
+    /* Task lists: cmark emits <li><input> <p>text</p></li>, so keep checkbox and text on one line. */
+    li:has(> input[type=checkbox]) {
+      list-style: none; display: flex; align-items: baseline; gap: 0.5em; margin-left: -1.4em;
+    }
+    li > input[type=checkbox] { accent-color: var(--accent); margin: 0; flex: none; transform: translateY(1px); }
+    li > input[type=checkbox] + p { margin: 0; }
     table { border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     th, td { padding: 0.5em 0.85em; border-bottom: 1px solid var(--border); text-align: left; }
     tr:last-child td { border-bottom: none; }

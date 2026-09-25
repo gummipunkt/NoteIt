@@ -35,16 +35,33 @@ public struct Note: Identifiable, Equatable, Hashable, Sendable {
         NoteFileStore.markdownExtensions.contains(fileExtension)
     }
 
-    /// A short single-line excerpt of the body for list display.
+    /// A short single-line excerpt of the body for list display, without Markdown syntax.
+    /// A first line that just repeats the title is skipped.
     public var snippet: String {
-        let collapsed = body
-            .split(whereSeparator: \.isNewline)
-            .lazy
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .prefix(3)
-            .joined(separator: " ")
-        return String(collapsed.prefix(200))
+        var lines: [String] = []
+        for rawLine in body.split(whereSeparator: \.isNewline) {
+            let line = Self.plainText(of: String(rawLine))
+            guard !line.isEmpty else { continue }
+            if lines.isEmpty, line.compare(title, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame { continue }
+            lines.append(line)
+            if lines.count == 3 { break }
+        }
+        return String(lines.joined(separator: " ").prefix(200))
+    }
+
+    /// Strips the most common Markdown syntax from a single line.
+    static func plainText(of line: String) -> String {
+        var text = line.trimmingCharacters(in: .whitespaces)
+        if text.hasPrefix("```") || text.hasPrefix("~~~") { return "" }
+        // Horizontal rules and table separator rows carry no text.
+        if text.allSatisfy({ "-*_=|: ".contains($0) }) { return "" }
+        if let marker = text.range(of: #"^(#{1,6}|>+|[-*+]([ \t]+\[[ xX]\])?|\d{1,9}[.)])[ \t]+"#, options: .regularExpression) {
+            text.removeSubrange(marker)
+        }
+        for syntax in ["**", "__", "~~", "`", "[[", "]]"] {
+            text = text.replacingOccurrences(of: syntax, with: "")
+        }
+        return text.trimmingCharacters(in: .whitespaces)
     }
 
     /// A stable fingerprint of the note's title and body, used to detect local changes

@@ -1,4 +1,5 @@
 import AppKit
+import NoteItCore
 import SwiftUI
 
 @main
@@ -12,29 +13,29 @@ struct NoteItApp: App {
                 .environmentObject(model)
                 .frame(minWidth: 640, minHeight: 400)
         }
-        .defaultSize(width: 1100, height: 720)
+        .defaultSize(width: 1000, height: 680)
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Über NoteIt") { AppInfo.showAboutPanel() }
+                Button(L10n.tr(.menuAbout)) { AppInfo.showAboutPanel() }
             }
             CommandGroup(replacing: .newItem) {
-                Button("Neue Notiz") { model.newNote() }
+                Button(L10n.tr(.newNote)) { model.newNote() }
                     .keyboardShortcut("n")
-                Button("Suchen") { model.requestSearchFocus() }
+                Button(L10n.tr(.search)) { model.requestSearchFocus() }
                     .keyboardShortcut("l")
             }
             CommandGroup(replacing: .printItem) {}
-            CommandMenu("Notiz") {
-                Button("Umbenennen") { model.requestTitleEditing() }
+            CommandMenu(L10n.tr(.menuNote)) {
+                Button(L10n.tr(.rename)) { model.requestTitleEditing() }
                     .keyboardShortcut("r")
                     .disabled(model.selectedNote == nil)
-                Button("In den Papierkorb legen …") { model.beginDelete() }
+                Button(L10n.tr(.moveToTrash)) { model.beginDelete() }
                     .disabled(model.selectedNote == nil)
-                Button("Im Finder zeigen") { model.revealSelectedInFinder() }
+                Button(L10n.tr(.showInFinder)) { model.revealSelectedInFinder() }
                     .disabled(model.selectedNote == nil)
                 Divider()
-                Button("Mit Simplenote synchronisieren") { model.syncNow() }
+                Button(L10n.tr(.syncWithSimplenote)) { model.syncNow() }
                     .keyboardShortcut("s", modifiers: [.command, .shift])
                     .disabled(!model.isSimplenoteConnected || model.isSyncing)
             }
@@ -46,9 +47,9 @@ struct NoteItApp: App {
                 Divider()
             }
             CommandGroup(replacing: .help) {
-                Button("NoteIt-Website") { NSWorkspace.shared.open(AppInfo.website) }
-                Button("Quellcode auf GitHub") { NSWorkspace.shared.open(AppInfo.repository) }
-                Button("Kontakt: \(AppInfo.email)") {
+                Button(L10n.tr(.menuWebsite)) { NSWorkspace.shared.open(AppInfo.website) }
+                Button(L10n.tr(.sourceCodeOnGitHub)) { NSWorkspace.shared.open(AppInfo.repository) }
+                Button(L10n.tr(.contactFormat, AppInfo.email)) {
                     NSWorkspace.shared.open(URL(string: "mailto:\(AppInfo.email)")!)
                 }
             }

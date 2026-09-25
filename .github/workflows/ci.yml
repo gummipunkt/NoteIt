@@ -6,8 +6,10 @@ on:
 
 jobs:
   macos:
-    name: macOS – App bauen und Tests
+    name: macOS – build app and test
     runs-on: macos-latest
+    permissions:
+      contents: write # needed to publish releases for version tags
     steps:
       - uses: actions/checkout@v5
         with:
@@ -16,16 +18,16 @@ jobs:
         run: swift --version
       - name: Build
         run: swift build
-      - name: Tests
+      - name: Test
         run: swift test
-      - name: App-Bundle bauen
+      - name: Build app bundle and disk image
         run: |
           scripts/build-app.sh
-          ditto -c -k --keepParent build/NoteIt.app build/NoteIt.zip
+          scripts/make-dmg.sh
       - uses: actions/upload-artifact@v4
         with:
           name: NoteIt
-          path: build/NoteIt.zip
+          path: build/NoteIt-*.dmg
       - name: Screenshots
         continue-on-error: true
         run: scripts/screenshot.sh
@@ -35,12 +37,30 @@ jobs:
           name: Screenshots
           path: build/screenshots
           if-no-files-found: ignore
+      - name: Publish release (version tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          # Release notes: the matching section of CHANGELOG.md.
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > build/release-notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" build/NoteIt-*.dmg --clobber
+          else
+            gh release create "$TAG" build/NoteIt-*.dmg --title "NoteIt $VERSION" --notes-file build/release-notes.md
+          fi
 
   linux:
-    name: Linux – Kern-Tests
+    name: Linux – core tests
     runs-on: ubuntu-latest
     container: swift:6.2-noble
     steps:
       - uses: actions/checkout@v5
-      - name: Tests
+      - name: Test
         run: swift test

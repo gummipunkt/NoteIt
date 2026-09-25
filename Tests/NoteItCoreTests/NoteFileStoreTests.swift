@@ -9,6 +9,7 @@ final class NoteFileStoreTests: XCTestCase {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("NoteItTests-\(UUID().uuidString)")
         store = NoteFileStore(folder: folder)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        L10n.language = .de
     }
 
     override func tearDownWithError() throws {
@@ -71,6 +72,12 @@ final class NoteFileStoreTests: XCTestCase {
         try Data([0x47, 0x72, 0xFC, 0xDF, 0x65]).write(to: folder.appendingPathComponent("latin.txt"))
         XCTAssertEqual(try store.load(fileName: "bom.txt").body, "Hallo")
         XCTAssertEqual(try store.load(fileName: "latin.txt").body, "Grüße")
+    }
+
+    func testSnippetStripsMarkdown() {
+        let note = Note(fileName: "Projektideen.md", body: "# Projektideen\n\n## Diese Woche\n\n- [x] **NoteIt** einrichten\n---\n> Zitat mit [[Link]]\n```\ncode")
+        XCTAssertEqual(note.snippet, "Diese Woche NoteIt einrichten Zitat mit Link")
+        XCTAssertEqual(Note(fileName: "A.md", body: "1. eins\n| a | b |\n|---|---|").snippet, "eins | a | b |")
     }
 
     func testSnippetAndFingerprint() {

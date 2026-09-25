@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  macos:
+    name: macOS – App bauen und Tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Build
+        run: swift build
+      - name: Tests
+        run: swift test
+      - name: App-Bundle bauen
+        run: |
+          scripts/build-app.sh
+          ditto -c -k --keepParent build/NoteIt.app build/NoteIt.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NoteIt
+          path: build/NoteIt.zip
+
+  linux:
+    name: Linux – Kern-Tests
+    runs-on: ubuntu-latest
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests
+        run: swift test

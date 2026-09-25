@@ -47,13 +47,15 @@ Quellcode: <https://github.com/gummipunkt/NoteIt>
 Voraussetzung ist macOS 14 oder neuer mit Xcode (bzw. den Xcode Command Line Tools).
 
 ```bash
-# direkt starten
-swift run NoteIt
+# zum Entwickeln starten (baut, signiert und startet)
+scripts/run.sh
 
 # oder ein richtiges App-Bundle nach build/NoteIt.app bauen
 scripts/build-app.sh            # für diesen Mac
 scripts/build-app.sh universal  # Apple Silicon + Intel
 ```
+
+**Schlüsselbund-Abfrage bei jedem Start?** macOS merkt sich „Immer erlauben“ anhand der Code-Signatur. `swift run NoteIt` signiert bei jedem Neubau nur ad hoc, deshalb wirkt die App jedes Mal wie ein neues Programm. `scripts/run.sh` und `scripts/build-app.sh` verwenden automatisch dein Apple-Development-Zertifikat, falls eines vorhanden ist. Dann genügt ein einziges „Immer erlauben“. Das Zertifikat bekommst du kostenlos: Xcode → Einstellungen → Accounts → Apple-ID hinzufügen → „Manage Certificates…“ → „+“ → „Apple Development“. Ein bestimmtes Zertifikat erzwingst du mit `CODESIGN_IDENTITY="Apple Development: …" scripts/run.sh`.
 
 Alternativ öffnest du `Package.swift` in Xcode, wählst das Schema **NoteIt** und drückst ⌘R.
 

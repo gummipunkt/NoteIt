@@ -71,6 +71,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc signature so macOS (and the Keychain) accept the app locally.
-codesign --force --sign - "$APP"
+# Sign with a stable identity if available (see scripts/signing.sh), otherwise ad hoc.
+source scripts/signing.sh
+IDENTITY="$(find_signing_identity)"
+if [[ -n "$IDENTITY" ]]; then
+  codesign --force --sign "$IDENTITY" "$APP"
+  echo "Signiert mit: $IDENTITY"
+else
+  codesign --force --sign - "$APP"
+  warn_ad_hoc
+fi
 echo "Fertig: $APP (Version $VERSION, Build $BUILD)"

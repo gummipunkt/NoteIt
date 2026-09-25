@@ -11,6 +11,8 @@ struct SettingsView: View {
                 .tabItem { Label("Speicherort", systemImage: "folder") }
             SimplenoteSettings()
                 .tabItem { Label("Simplenote", systemImage: "arrow.triangle.2.circlepath") }
+            AboutSettings()
+                .tabItem { Label("Über", systemImage: "info.circle") }
         }
         .frame(width: 520)
         .padding(20)
@@ -19,9 +21,9 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @EnvironmentObject private var model: AppModel
-    @AppStorage("listLayout") private var layout: ListLayout = .above
-    @AppStorage("editorFontSize") private var fontSize = 14.0
-    @AppStorage("editorMonospaced") private var monospaced = true
+    @AppStorage("editorFont") private var fontStyle: EditorFontStyle = .system
+    @AppStorage("editorFontSize") private var fontSize = 15.0
+    @AppStorage("editorNarrowColumn") private var narrowColumn = true
 
     var body: some View {
         Form {
@@ -29,12 +31,14 @@ private struct GeneralSettings: View {
                 Text("Markdown (.md)").tag("md")
                 Text("Text (.txt)").tag("txt")
             }
-            Picker("Anordnung:", selection: $layout) {
-                ForEach(ListLayout.allCases) { Text($0.label).tag($0) }
+            Picker("Ansicht:", selection: $model.viewMode) {
+                ForEach(ViewMode.allCases) { Text($0.label).tag($0) }
             }
-            Toggle("Markdown-Vorschau anzeigen", isOn: $model.showPreview)
-            Stepper("Schriftgröße: \(Int(fontSize)) pt", value: $fontSize, in: 9...32)
-            Toggle("Festbreitenschrift im Editor", isOn: $monospaced)
+            Picker("Schrift:", selection: $fontStyle) {
+                ForEach(EditorFontStyle.allCases) { Text($0.label).tag($0) }
+            }
+            Stepper("Schriftgröße: \(Int(fontSize)) pt", value: $fontSize, in: 10...32)
+            Toggle("Schmale Textspalte (angenehmer zu lesen)", isOn: $narrowColumn)
         }
     }
 }
@@ -170,6 +174,35 @@ private struct SimplenoteSettings: View {
             }
             isSigningIn = false
         }
+    }
+}
+
+private struct AboutSettings: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            if let icon = NSApp.applicationIconImage {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 72, height: 72)
+            }
+            Text(AppInfo.name)
+                .font(.title2.bold())
+            Text(AppInfo.versionLabel)
+                .foregroundStyle(.secondary)
+            Text(AppInfo.copyright)
+            HStack(spacing: 16) {
+                Link("www.gummipunkt.eu", destination: AppInfo.website)
+                Link(AppInfo.email, destination: URL(string: "mailto:\(AppInfo.email)")!)
+                Link("Quellcode auf GitHub", destination: AppInfo.repository)
+            }
+            Text("Freie Software unter der GNU General Public License v3.0.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Link("Lizenztext lesen", destination: AppInfo.licenseURL)
+                .font(.callout)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 }
 

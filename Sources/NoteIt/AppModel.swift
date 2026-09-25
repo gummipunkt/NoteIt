@@ -3,16 +3,27 @@ import Combine
 import NoteItCore
 import SwiftUI
 
-enum ListLayout: String, CaseIterable, Identifiable {
-    case above
-    case beside
+/// What the detail area shows.
+enum ViewMode: String, CaseIterable, Identifiable {
+    case edit
+    case split
+    case preview
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .above: return "Liste oben"
-        case .beside: return "Liste links"
+        case .edit: return "Schreiben"
+        case .split: return "Geteilt"
+        case .preview: return "Vorschau"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .edit: return "square.and.pencil"
+        case .split: return "rectangle.split.2x1"
+        case .preview: return "eye"
         }
     }
 }
@@ -25,7 +36,8 @@ final class AppModel: ObservableObject {
     private enum Keys {
         static let folderPath = "notesFolderPath"
         static let defaultExtension = "defaultExtension"
-        static let showPreview = "showPreview"
+        static let viewMode = "viewMode"
+        static let didOfferWelcomeNote = "didOfferWelcomeNote"
         static let simplenoteEmail = "simplenoteEmail"
         static let autoSync = "simplenoteAutoSync"
     }
@@ -37,7 +49,7 @@ final class AppModel: ObservableObject {
     @Published var query = "" { didSet { if query != oldValue { queryChanged() } } }
     @Published var selectedID: Note.ID? { didSet { if selectedID != oldValue { selectionChanged() } } }
     @Published var editorText = "" { didSet { if editorText != oldValue { editorTextChanged() } } }
-    @Published var showPreview: Bool { didSet { defaults.set(showPreview, forKey: Keys.showPreview) } }
+    @Published var viewMode: ViewMode { didSet { defaults.set(viewMode.rawValue, forKey: Keys.viewMode) } }
     @Published private(set) var folderURL: URL
     @Published var defaultExtension: String {
         didSet {
@@ -47,12 +59,13 @@ final class AppModel: ObservableObject {
     }
 
     @Published var errorMessage: String?
-    @Published var renameTarget: Note?
     @Published var deleteTarget: Note?
 
     /// Incremented to ask the views to move keyboard focus.
     @Published private(set) var searchFocusRequest = 0
     @Published private(set) var editorFocusRequest = 0
+    /// Set when the title field should take focus (e.g. after ⌘N); the title view clears it.
+    @Published var titleFocusPending = false
 
     // Simplenote
     @Published private(set) var simplenoteAccount: String?
@@ -81,20 +94,36 @@ final class AppModel: ObservableObject {
 
     private init() {
         let defaults = UserDefaults.standard
-        let path = defaults.string(forKey: Keys.folderPath)
+        // NOTEIT_NOTES_DIR overrides the folder for one run (used for demos and CI screenshots).
+        let environment = ProcessInfo.processInfo.environment
+        let path = environment["NOTEIT_NOTES_DIR"] ?? defaults.string(forKey: Keys.folderPath)
         let folder = path.map { URL(fileURLWithPath: $0, isDirectory: true) } ?? Self.defaultFolder
         let fileExtension = defaults.string(forKey: Keys.defaultExtension) ?? "md"
         folderURL = folder
         defaultExtension = fileExtension
-        showPreview = defaults.object(forKey: Keys.showPreview) as? Bool ?? true
+        viewMode = defaults.string(forKey: Keys.viewMode).flatMap(ViewMode.init(rawValue:)) ?? .edit
         autoSync = defaults.object(forKey: Keys.autoSync) as? Bool ?? true
         store = NoteFileStore(folder: folder, defaultExtension: fileExtension)
         simplenoteAccount = defaults.string(forKey: Keys.simplenoteEmail)
 
         reloadFromDisk()
+        createWelcomeNoteIfNeeded()
         startMonitoring()
         configureSyncEngine()
         if isSimplenoteConnected { syncNow() }
+        if let title = environment["NOTEIT_SELECT"],
+           let note = NoteSearch.exactTitleMatch(in: notes, query: title) {
+            selectedID = note.id
+        }
+    }
+
+    /// On the very first launch with an empty folder, leave a short guide as the first note.
+    private func createWelcomeNoteIfNeeded() {
+        guard notes.isEmpty, !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
+        defaults.set(true, forKey: Keys.didOfferWelcomeNote)
+        if let note = try? store.create(title: "Willkommen bei NoteIt", body: WelcomeNote.body, fileExtension: "md") {
+            notes.append(note)
+        }
     }
 
     static var defaultFolder: URL {
@@ -145,6 +174,24 @@ final class AppModel: ObservableObject {
             return
         }
         editorFocusRequest += 1
+    }
+
+    /// ⌘N / the "new note" button: use the search text as title if there is one,
+    /// otherwise create "Neue Notiz" and put the cursor into its title.
+    func newNote() {
+        let title = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty {
+            submitSearch()
+            return
+        }
+        if createNote(title: "Neue Notiz") != nil {
+            titleFocusPending = true
+        }
+    }
+
+    func requestTitleEditing() {
+        guard selectedNote != nil else { return }
+        titleFocusPending = true
     }
 
     func moveSelection(by offset: Int) {
@@ -236,13 +283,13 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func beginRename() {
-        renameTarget = selectedNote
+    func rename(_ note: Note, to newTitle: String) {
+        rename(noteID: note.id, to: newTitle)
     }
 
-    func rename(_ note: Note, to newTitle: String) {
+    func rename(noteID: Note.ID, to newTitle: String) {
         saveNow()
-        guard let current = notes.first(where: { $0.id == note.id }) else { return }
+        guard let current = notes.first(where: { $0.id == noteID }) else { return }
         do {
             let renamed = try store.rename(current, to: newTitle)
             guard renamed.fileName != current.fileName else { return }
@@ -254,7 +301,8 @@ final class AppModel: ObservableObject {
                 selectedID = renamed.id
             }
             if let engine = syncEngine {
-                Task { await engine.noteRenamed(from: current.fileName, to: renamed.fileName) }
+                let oldName = current.fileName, newName = renamed.fileName
+                Task { await engine.noteRenamed(from: oldName, to: newName) }
             }
             scheduleSyncSoon()
         } catch {
@@ -319,9 +367,23 @@ final class AppModel: ObservableObject {
         defaults.set(url.path, forKey: Keys.folderPath)
         store = NoteFileStore(folder: url, defaultExtension: defaultExtension)
         reloadFromDisk()
+        createWelcomeNoteIfNeeded()
         startMonitoring()
         configureSyncEngine()
         if isSimplenoteConnected { syncNow() }
+        if let title = environment["NOTEIT_SELECT"],
+           let note = NoteSearch.exactTitleMatch(in: notes, query: title) {
+            selectedID = note.id
+        }
+    }
+
+    /// On the very first launch with an empty folder, leave a short guide as the first note.
+    private func createWelcomeNoteIfNeeded() {
+        guard notes.isEmpty, !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
+        defaults.set(true, forKey: Keys.didOfferWelcomeNote)
+        if let note = try? store.create(title: "Willkommen bei NoteIt", body: WelcomeNote.body, fileExtension: "md") {
+            notes.append(note)
+        }
     }
 
     func reloadFromDisk() {

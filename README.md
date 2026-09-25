@@ -1,11 +1,25 @@
+<p align="center"><img src="Assets/AppIcon.png" width="128" alt="NoteIt-Icon"></p>
+
 # NoteIt
 
 Eine schnelle Notiz-App für macOS im Stil von **nvALT** / Notational Velocity, geschrieben in Swift (SwiftUI + AppKit).
 
+**Version 0.2.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · Lizenz: [GPL 3.0](LICENSE)
+
+Quellcode: <https://github.com/gummipunkt/NoteIt>
+
+## Neue Notiz anlegen
+
+- **Schnellster Weg (wie nvALT):** Oben ins Suchfeld klicken (oder ⌘L), einen Titel tippen und ⏎ drücken. Gibt es noch keine Notiz mit diesem Titel, wird sie angelegt und du schreibst direkt weiter.
+- **Per Knopf oder ⌘N:** Der Knopf „Neue Notiz“ (Stift-Symbol) in der Symbolleiste legt eine „Neue Notiz“ an. Den markierten Titel überschreibst du einfach und bestätigst mit ⏎.
+- Umbenennen geht jederzeit über den großen Titel über dem Text (oder ⌘R).
+
 ## Funktionen
 
 - **Ein Feld für Suchen und Erstellen**: Beim Tippen wird die Liste live gefiltert. ⏎ öffnet die Notiz mit genau diesem Titel oder legt sie neu an.
-- **Liste und Editor**: Die Liste steht wahlweise über oder neben dem Editor. Mit ↑/↓ blätterst du direkt aus dem Suchfeld durch die Notizen.
+- **Modernes macOS-Design**: Seitenleiste mit Notizliste (Titel, Datum, Vorschautext), Suchfeld in der Symbolleiste, großer bearbeitbarer Titel, zentrierte Textspalte, heller und dunkler Modus. Mit ↑/↓ blätterst du direkt aus dem Suchfeld durch die Notizen.
+- **Markdown-Hervorhebung beim Schreiben**: Überschriften, **fett**, *kursiv*, Code, Listen, Aufgaben und Links sind schon im Editor erkennbar. Als Schrift stehen SF Pro, New York (Serif) oder SF Mono zur Wahl.
+- **Drei Ansichten**: Schreiben, Geteilt (Editor + Vorschau) und Vorschau (⌘1 · ⌘2 · ⌘3).
 - **Automatisches Speichern**: Es gibt keinen Speichern-Knopf. Änderungen landen nach kurzer Tipp-Pause auf der Platte, außerdem beim Wechsel der Notiz und beim Beenden.
 - **Klartextdateien**: Jede Notiz ist eine `.md`- oder `.txt`-Datei, der Dateiname ist der Titel. Vorhandene Dateien im Ordner werden einfach mitgelesen.
 - **Markdown-Vorschau**: Die Vorschau aktualisiert sich live, unterstützt GitHub-Markdown (Tabellen, Durchstreichen, Code) und folgt dem hellen bzw. dunklen Modus.
@@ -17,13 +31,14 @@ Eine schnelle Notiz-App für macOS im Stil von **nvALT** / Notational Velocity, 
 
 | Kürzel | Aktion |
 |---|---|
-| ⌘L / ⌘N | Zum Suchfeld (suchen oder neue Notiz) |
+| ⌘N | Neue Notiz (nimmt den Suchtext als Titel, falls vorhanden) |
+| ⌘L | Zum Suchfeld |
 | ⏎ im Suchfeld | Notiz öffnen oder erstellen, danach weiter im Editor |
 | ↑ / ↓ im Suchfeld | Vorherige / nächste Notiz |
 | Esc | Suche leeren, zurück ins Suchfeld |
-| ⌘R | Notiz umbenennen |
+| ⌘R | Titel bearbeiten (umbenennen) |
 | ⌫ in der Liste | Notiz in den Papierkorb legen |
-| ⌘⇧P | Vorschau ein- oder ausblenden |
+| ⌘1 · ⌘2 · ⌘3 | Schreiben · Geteilt · Vorschau |
 | ⌘⇧S | Mit Simplenote synchronisieren |
 | ⌘, | Einstellungen |
 
@@ -42,9 +57,11 @@ scripts/build-app.sh universal  # Apple Silicon + Intel
 
 Alternativ öffnest du `Package.swift` in Xcode, wählst das Schema **NoteIt** und drückst ⌘R.
 
-Jeder Push baut die App außerdem per GitHub Actions. Das fertige `NoteIt.zip` liegt dann als Artefakt am jeweiligen Workflow-Lauf.
+Jeder Push baut die App außerdem per GitHub Actions. Das fertige `NoteIt.zip` und Bildschirmfotos liegen dann als Artefakte am jeweiligen Workflow-Lauf.
 
-Beim ersten Start liegen die Notizen in `~/Documents/NoteIt`. Unter **Einstellungen → Speicherort** kannst du das ändern.
+Die Versionsnummer steht an genau einer Stelle, in `Sources/NoteIt/AppInfo.swift`. Das Build-Skript übernimmt sie ins App-Bundle, die Build-Nummer ist die Anzahl der Commits. Änderungen stehen im [CHANGELOG](CHANGELOG.md). Veröffentlichte Versionen sind als Git-Tags markiert (`v0.1.0`, `v0.2.0`, …).
+
+Beim ersten Start liegen die Notizen in `~/Documents/NoteIt`, dort wartet auch eine kurze Willkommens-Notiz. Unter **Einstellungen → Speicherort** kannst du das ändern.
 
 ## Simplenote
 
@@ -79,9 +96,19 @@ Sources/NoteIt/            die macOS-App (SwiftUI + AppKit)
 Tests/NoteItCoreTests/     Tests, u. a. für den Sync mit einem simulierten Simperium-Server
 ```
 
+Das App-Icon wird mit `scripts/make-icon.py` gezeichnet (braucht Pillow).
+
 Tests:
 
 ```bash
 swift test                # auf dem Mac
 scripts/test-linux.sh     # Kern-Tests in Docker unter Linux
 ```
+
+## Lizenz
+
+Copyright © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu)
+
+NoteIt ist freie Software: Du kannst es unter den Bedingungen der **GNU General Public License, Version 3**, wie von der Free Software Foundation veröffentlicht, weitergeben und/oder verändern.
+
+NoteIt wird in der Hoffnung verbreitet, dass es nützlich ist, aber **ohne jede Gewährleistung**, sogar ohne die implizite Gewährleistung der Marktreife oder der Eignung für einen bestimmten Zweck. Details stehen in der Datei [LICENSE](LICENSE).

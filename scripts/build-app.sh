@@ -14,12 +14,27 @@ fi
 swift build -c release --product NoteIt ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
 BIN_DIR="$(swift build -c release --show-bin-path ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"})"
 
+# Version comes from AppInfo.swift; the build number is the number of commits.
+VERSION="$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Sources/NoteIt/AppInfo.swift)"
+BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+YEAR="$(sed -n 's/.*static let copyrightYear = "\(.*\)".*/\1/p' Sources/NoteIt/AppInfo.swift)"
+AUTHOR="$(sed -n 's/.*static let author = "\(.*\)".*/\1/p' Sources/NoteIt/AppInfo.swift)"
+
 APP="build/NoteIt.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/NoteIt" "$APP/Contents/MacOS/NoteIt"
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
+# App icon: Assets/AppIcon.png → AppIcon.icns
+ICONSET="build/AppIcon.iconset"
+rm -rf "$ICONSET" && mkdir -p "$ICONSET"
+for size in 16 32 128 256 512; do
+  sips -z $size $size Assets/AppIcon.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
+  sips -z $((size * 2)) $((size * 2)) Assets/AppIcon.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+
+cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -35,9 +50,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>${VERSION}</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>${BUILD}</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© ${YEAR} ${AUTHOR} · GPL-3.0</string>
     <key>CFBundleDevelopmentRegion</key>
     <string>de</string>
     <key>LSMinimumSystemVersion</key>
@@ -54,4 +73,4 @@ PLIST
 
 # Ad-hoc signature so macOS (and the Keychain) accept the app locally.
 codesign --force --sign - "$APP"
-echo "Fertig: $APP"
+echo "Fertig: $APP (Version $VERSION, Build $BUILD)"

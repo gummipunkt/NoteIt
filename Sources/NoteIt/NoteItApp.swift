@@ -10,19 +10,23 @@ struct NoteItApp: App {
         Window("NoteIt", id: "main") {
             ContentView()
                 .environmentObject(model)
-                .frame(minWidth: 520, minHeight: 360)
+                .frame(minWidth: 640, minHeight: 400)
         }
-        .defaultSize(width: 900, height: 640)
+        .defaultSize(width: 1100, height: 720)
+        .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("Über NoteIt") { AppInfo.showAboutPanel() }
+            }
             CommandGroup(replacing: .newItem) {
-                Button("Suchen / Neue Notiz") { model.requestSearchFocus() }
-                    .keyboardShortcut("l")
-                Button("Neue Notiz") { model.requestSearchFocus() }
+                Button("Neue Notiz") { model.newNote() }
                     .keyboardShortcut("n")
+                Button("Suchen") { model.requestSearchFocus() }
+                    .keyboardShortcut("l")
             }
             CommandGroup(replacing: .printItem) {}
             CommandMenu("Notiz") {
-                Button("Umbenennen …") { model.beginRename() }
+                Button("Umbenennen") { model.requestTitleEditing() }
                     .keyboardShortcut("r")
                     .disabled(model.selectedNote == nil)
                 Button("In den Papierkorb legen …") { model.beginDelete() }
@@ -30,14 +34,23 @@ struct NoteItApp: App {
                 Button("Im Finder zeigen") { model.revealSelectedInFinder() }
                     .disabled(model.selectedNote == nil)
                 Divider()
-                Button(model.showPreview ? "Vorschau ausblenden" : "Vorschau einblenden") {
-                    model.showPreview.toggle()
-                }
-                .keyboardShortcut("p", modifiers: [.command, .shift])
-                Divider()
                 Button("Mit Simplenote synchronisieren") { model.syncNow() }
                     .keyboardShortcut("s", modifiers: [.command, .shift])
                     .disabled(!model.isSimplenoteConnected || model.isSyncing)
+            }
+            CommandGroup(before: .sidebar) {
+                ForEach(Array(ViewMode.allCases.enumerated()), id: \.element) { index, mode in
+                    Button(mode.label) { model.viewMode = mode }
+                        .keyboardShortcut(KeyEquivalent(Character(String(index + 1))))
+                }
+                Divider()
+            }
+            CommandGroup(replacing: .help) {
+                Button("NoteIt-Website") { NSWorkspace.shared.open(AppInfo.website) }
+                Button("Quellcode auf GitHub") { NSWorkspace.shared.open(AppInfo.repository) }
+                Button("Kontakt: \(AppInfo.email)") {
+                    NSWorkspace.shared.open(URL(string: "mailto:\(AppInfo.email)")!)
+                }
             }
         }
 

@@ -12,8 +12,8 @@ struct OmniSearchField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSSearchField {
         let field = NSSearchField()
-        field.placeholderString = "Suchen oder neue Notiz erstellen"
-        field.font = .systemFont(ofSize: 15)
+        field.placeholderString = "Suchen oder Titel eingeben und ⏎ drücken"
+        field.font = .systemFont(ofSize: 13)
         field.delegate = context.coordinator
         field.sendsSearchStringImmediately = true
         field.sendsWholeSearchString = false

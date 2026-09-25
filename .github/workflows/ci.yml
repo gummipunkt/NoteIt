@@ -10,6 +10,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history: the build number is the commit count
       - name: Toolchain
         run: swift --version
       - name: Build
@@ -24,6 +26,15 @@ jobs:
         with:
           name: NoteIt
           path: build/NoteIt.zip
+      - name: Screenshots
+        continue-on-error: true
+        run: scripts/screenshot.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Screenshots
+          path: build/screenshots
+          if-no-files-found: ignore
 
   linux:
     name: Linux – Kern-Tests

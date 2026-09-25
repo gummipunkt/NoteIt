@@ -18,6 +18,7 @@ struct MarkdownPreview: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.allowsMagnification = true
+        webView.underPageBackgroundColor = .textBackgroundColor
         return webView
     }
 
@@ -52,9 +53,20 @@ struct MarkdownPreview: NSViewRepresentable {
                 loadedNoteID = note.id
                 lastBody = body
                 isLoaded = false
-                let html = MarkdownRenderer.htmlDocument(for: note, noteExists: parent.noteExists)
+                let html = MarkdownRenderer.htmlDocument(for: note, noteExists: parent.noteExists, accentColor: Self.accentCSSColor)
                 webView.loadHTMLString(html, baseURL: parent.baseURL)
             }
+        }
+
+        /// The macOS accent color as CSS hex, so the preview matches the rest of the app.
+        static var accentCSSColor: String? {
+            guard let color = NSColor.controlAccentColor.usingColorSpace(.sRGB) else { return nil }
+            return String(
+                format: "#%02X%02X%02X",
+                Int((color.redComponent * 255).rounded()),
+                Int((color.greenComponent * 255).rounded()),
+                Int((color.blueComponent * 255).rounded())
+            )
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

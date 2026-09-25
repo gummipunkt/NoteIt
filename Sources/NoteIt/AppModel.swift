@@ -367,23 +367,9 @@ final class AppModel: ObservableObject {
         defaults.set(url.path, forKey: Keys.folderPath)
         store = NoteFileStore(folder: url, defaultExtension: defaultExtension)
         reloadFromDisk()
-        createWelcomeNoteIfNeeded()
         startMonitoring()
         configureSyncEngine()
         if isSimplenoteConnected { syncNow() }
-        if let title = environment["NOTEIT_SELECT"],
-           let note = NoteSearch.exactTitleMatch(in: notes, query: title) {
-            selectedID = note.id
-        }
-    }
-
-    /// On the very first launch with an empty folder, leave a short guide as the first note.
-    private func createWelcomeNoteIfNeeded() {
-        guard notes.isEmpty, !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
-        defaults.set(true, forKey: Keys.didOfferWelcomeNote)
-        if let note = try? store.create(title: "Willkommen bei NoteIt", body: WelcomeNote.body, fileExtension: "md") {
-            notes.append(note)
-        }
     }
 
     func reloadFromDisk() {

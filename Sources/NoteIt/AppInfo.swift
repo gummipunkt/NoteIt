@@ -4,7 +4,7 @@ import AppKit
 /// from this file for the app bundle's Info.plist, so this is the single source of truth.
 enum AppInfo {
     static let name = "NoteIt"
-    static let version = "0.2.0"
+    static let version = "0.2.1"
     static let author = "Patrick Walter"
     static let copyrightYear = "2026"
     static let website = URL(string: "https://www.gummipunkt.eu")!

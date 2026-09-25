@@ -4,7 +4,7 @@
 
 Eine schnelle Notiz-App für macOS im Stil von **nvALT** / Notational Velocity, geschrieben in Swift (SwiftUI + AppKit).
 
-**Version 0.2.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · Lizenz: [GPL 3.0](LICENSE)
+**Version 0.2.1** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · Lizenz: [GPL 3.0](LICENSE)
 
 Quellcode: <https://github.com/gummipunkt/NoteIt>
 

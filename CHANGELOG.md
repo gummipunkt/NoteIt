@@ -2,7 +2,14 @@
 
 Alle nennenswerten Änderungen an NoteIt. Die Versionsnummern folgen [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.2.1] – 2026-09-25
+
+### Behoben
+- 0.2.0 ließ sich nicht kompilieren: Code für die Willkommens-Notiz war versehentlich doppelt in `AppModel.swift` gelandet.
+
 ## [0.2.0] – 2026-09-25
+
+> Hinweis: Diese Version lässt sich nicht bauen, bitte 0.2.1 verwenden.
 
 ### Neu
 - Modernes Design: Seitenleiste mit Notizliste (Titel, Datum, Vorschautext), Suchfeld in der Symbolleiste, großer, direkt bearbeitbarer Titel über dem Text, zentrierte Textspalte.
@@ -28,5 +35,6 @@ Alle nennenswerten Änderungen an NoteIt. Die Versionsnummern folgen [Semantic V
 - Markdown-Vorschau mit Wiki-Links (`[[Notiz]]`).
 - Zwei-Wege-Sync mit Simplenote.
 
+[0.2.1]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.2.1
 [0.2.0]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.2.0
 [0.1.0]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.1.0

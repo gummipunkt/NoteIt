@@ -4,7 +4,7 @@
 
 Eine schnelle Notiz-App für macOS im Stil von **nvALT** / Notational Velocity, geschrieben in Swift (SwiftUI + AppKit).
 
-**Version 0.3.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · Lizenz: [GPL 3.0](LICENSE)
+**Version 0.4.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · Lizenz: [GPL 3.0](LICENSE)
 
 Verfügbar auf Deutsch, Englisch, Französisch, Italienisch und Spanisch. · [English README](README.md)
 
@@ -21,6 +21,15 @@ NoteIt ist noch nicht von Apple notarisiert. Verweigert macOS beim ersten Start 
 - **Schnellster Weg (wie nvALT):** Oben ins Suchfeld klicken (oder ⌘L), einen Titel tippen und ⏎ drücken. Gibt es noch keine Notiz mit diesem Titel, wird sie angelegt und du schreibst direkt weiter.
 - **Per Knopf oder ⌘N:** Der Knopf „Neue Notiz“ (Stift-Symbol) in der Symbolleiste legt eine „Neue Notiz“ an. Den markierten Titel überschreibst du einfach und bestätigst mit ⏎.
 - Umbenennen geht jederzeit über den großen Titel über dem Text (oder ⌘R).
+
+## Temporäre Notizen
+
+Für schnelle Notizen, die diesen Mac nie verlassen sollen: **⌘⇧N**, **⌥⏎** im Suchfeld oder der Pfeil neben dem Knopf „Neue Notiz“.
+
+- Sie liegen in `~/Library/Application Support/NoteIt/Temporary`, also außerhalb des Notizordners, und werden **nie synchronisiert**, weder über Simplenote noch über Dropbox oder Google Drive.
+- Sie sind klar abgetrennt: ein eigener Bereich **„Temporär · nicht synchronisiert“** oben in der Seitenleiste (orange, Sanduhr-Symbol) und ein gestrichelter Hinweis über der Notiz, der die verbleibenden Tage anzeigt.
+- Standardmäßig wandern sie nach **7 Tagen ohne Änderung** in den Papierkorb. Unter Einstellungen → Allgemein wählst du nie, 1, 7 oder 30 Tage.
+- **Dauerhaft behalten** (im Hinweis, im Kontextmenü oder im Menü „Notiz“) verschiebt eine temporäre Notiz in den Notizordner. Ab dann wird sie wie jede andere Notiz synchronisiert.
 
 ## Funktionen
 
@@ -41,6 +50,7 @@ NoteIt ist noch nicht von Apple notarisiert. Verweigert macOS beim ersten Start 
 | Kürzel | Aktion |
 |---|---|
 | ⌘N | Neue Notiz (nimmt den Suchtext als Titel, falls vorhanden) |
+| ⌘⇧N / ⌥⏎ im Suchfeld | Neue temporäre Notiz (nur lokal, nie synchronisiert) |
 | ⌘L | Zum Suchfeld |
 | ⏎ im Suchfeld | Notiz öffnen oder erstellen, danach weiter im Editor |
 | ↑ / ↓ im Suchfeld | Vorherige / nächste Notiz |

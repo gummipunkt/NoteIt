@@ -22,11 +22,18 @@ struct NoteItApp: App {
             CommandGroup(replacing: .newItem) {
                 Button(L10n.tr(.newNote)) { model.newNote() }
                     .keyboardShortcut("n")
+                Button(L10n.tr(.newTemporaryNote)) { model.newTemporaryNote() }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button(L10n.tr(.search)) { model.requestSearchFocus() }
                     .keyboardShortcut("l")
             }
             CommandGroup(replacing: .printItem) {}
             CommandMenu(L10n.tr(.menuNote)) {
+                Button(L10n.tr(.keepPermanently)) {
+                    if let note = model.selectedNote { model.makePermanent(note) }
+                }
+                .disabled(model.selectedNote?.isTemporary != true)
+                Divider()
                 Button(L10n.tr(.rename)) { model.requestTitleEditing() }
                     .keyboardShortcut("r")
                     .disabled(model.selectedNote == nil)

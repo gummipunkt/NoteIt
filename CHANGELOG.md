@@ -2,6 +2,17 @@
 
 All notable changes to NoteIt. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] – 2026-10-01
+
+### Added
+- Temporary notes (⌘⇧N, ⌥⏎ in the search field, or the menu on the “New Note” button). They are stored only on this Mac in `~/Library/Application Support/NoteIt/Temporary` and are never synced, neither via Simplenote nor via Dropbox or Google Drive.
+- Temporary notes have their own “Temporary · not synced” sidebar section and a banner above the note showing when it will be cleaned up.
+- “Keep Permanently” moves a temporary note into the notes folder.
+- Setting for how long temporary notes are kept without changes (never, 1, 7 or 30 days; default 7). Expired notes go to the macOS Trash.
+
+### Changed
+- Note titles are now unique regardless of file extension, so `Idea.md` and `Idea.txt` can no longer exist side by side.
+
 ## [0.3.0] – 2026-09-25
 
 ### Added
@@ -53,6 +64,7 @@ All notable changes to NoteIt. Version numbers follow [Semantic Versioning](http
 - Markdown preview with wiki links (`[[Note]]`).
 - Two-way sync with Simplenote.
 
+[0.4.0]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.4.0
 [0.3.0]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.3.0
 [0.2.1]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.2.1
 [0.2.0]: https://github.com/gummipunkt/NoteIt/releases/tag/v0.2.0

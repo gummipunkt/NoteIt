@@ -60,6 +60,9 @@ final class NoteFileStoreTests: XCTestCase {
             XCTAssertEqual(error as? NoteStoreError, .titleAlreadyExists("Belegt"))
         }
 
+        try store.create(title: "Anders", fileExtension: "txt")
+        XCTAssertThrowsError(try store.rename(note, to: "anders"), "title is taken even with another extension")
+
         note = try store.rename(note, to: "NEU")
         XCTAssertEqual(note.fileName, "NEU.md")
 

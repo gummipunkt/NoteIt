@@ -54,6 +54,20 @@ private struct GeneralSettings: View {
             }
             Stepper(L10n.tr(.fontSizeFormat, Int(fontSize)), value: $fontSize, in: 10...32)
             Toggle(L10n.tr(.narrowColumn), isOn: $narrowColumn)
+
+            Picker(L10n.tr(.temporaryRetentionLabel), selection: $model.temporaryRetentionDays) {
+                ForEach(TemporaryNotes.retentionChoices, id: \.self) { days in
+                    switch days {
+                    case 0: Text(L10n.tr(.retentionNever)).tag(days)
+                    case 1: Text(L10n.tr(.retentionAfterOneDay)).tag(days)
+                    default: Text(L10n.tr(.retentionAfterDaysFormat, days)).tag(days)
+                    }
+                }
+            }
+            Text(L10n.tr(.retentionHint))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

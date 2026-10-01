@@ -3,11 +3,12 @@ import NoteItCore
 import SwiftUI
 
 /// The nvALT search/create field: typing filters, ↑/↓ move through the list,
-/// ⏎ opens or creates the note, Esc clears.
+/// ⏎ opens or creates the note, ⌥⏎ creates a temporary note, Esc clears.
 struct OmniSearchField: NSViewRepresentable {
     @Binding var text: String
     var focusRequest: Int
     var onSubmit: () -> Void
+    var onSubmitTemporary: () -> Void
     var onMove: (Int) -> Void
     var onCancel: () -> Void
 
@@ -69,6 +70,10 @@ struct OmniSearchField: NSViewRepresentable {
                 return true
             case #selector(NSResponder.insertNewline(_:)):
                 parent.onSubmit()
+                return true
+            case #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)):
+                // ⌥⏎
+                parent.onSubmitTemporary()
                 return true
             case #selector(NSResponder.cancelOperation(_:)):
                 parent.onCancel()

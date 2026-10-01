@@ -30,10 +30,13 @@ public struct NoteFileStore: Sendable {
     public let folder: URL
     /// Extension used for newly created notes (`md` or `txt`).
     public var defaultExtension: String
+    /// Stamped onto every note this store returns.
+    public let location: NoteLocation
 
-    public init(folder: URL, defaultExtension: String = "md") {
+    public init(folder: URL, defaultExtension: String = "md", location: NoteLocation = .permanent) {
         self.folder = folder
         self.defaultExtension = defaultExtension
+        self.location = location
     }
 
     // MARK: - Reading
@@ -77,7 +80,8 @@ public struct NoteFileStore: Sendable {
             fileName: url.lastPathComponent,
             body: body,
             creationDate: values.creationDate ?? modified,
-            modificationDate: modified
+            modificationDate: modified,
+            location: location
         )
     }
 
@@ -131,7 +135,10 @@ public struct NoteFileStore: Sendable {
         let source = fileURL(for: note.fileName)
         let destination = fileURL(for: newFileName)
         let differsOnlyInCase = newFileName.lowercased() == note.fileName.lowercased()
-        if !differsOnlyInCase, FileManager.default.fileExists(atPath: destination.path) {
+        let titleTaken = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).contains { name in
+            name != note.fileName && (name as NSString).deletingPathExtension.lowercased() == sanitized.lowercased()
+        }
+        if titleTaken {
             throw NoteStoreError.titleAlreadyExists(sanitized)
         }
         if differsOnlyInCase {
@@ -146,6 +153,17 @@ public struct NoteFileStore: Sendable {
     }
 
     /// Deletes a note. On macOS the file is moved to the Trash so it can be recovered.
+    /// Moves a note into another store (e.g. a temporary note into the notes folder).
+    /// The title is kept; a number is appended if it is already taken there.
+    @discardableResult
+    public func move(_ note: Note, to destination: NoteFileStore) throws -> Note {
+        try FileManager.default.createDirectory(at: destination.folder, withIntermediateDirectories: true)
+        let fileExtension = note.fileExtension.isEmpty ? destination.defaultExtension : note.fileExtension
+        let newFileName = destination.uniqueFileName(forTitle: note.title, fileExtension: fileExtension)
+        try FileManager.default.moveItem(at: fileURL(for: note.fileName), to: destination.fileURL(for: newFileName))
+        return try destination.load(fileName: newFileName)
+    }
+
     public func delete(_ note: Note) throws {
         try delete(fileName: note.fileName)
     }
@@ -161,18 +179,19 @@ public struct NoteFileStore: Sendable {
 
     // MARK: - File names
 
-    /// Returns a file name for the title that does not collide with an existing file,
-    /// e.g. `Idee.md`, `Idee 2.md`, `Idee 3.md`, …
+    /// Returns a file name whose title is not used by any existing note, regardless of
+    /// extension (titles identify notes), e.g. `Idee.md`, `Idee 2.md`, `Idee 3.md`, …
     public func uniqueFileName(forTitle title: String, fileExtension: String) -> String {
         let base = Self.sanitizedTitle(title)
-        let existing = Set(((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).map { $0.lowercased() })
-        var candidate = base + "." + fileExtension
+        let existingTitles = Set(((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+            .map { ($0 as NSString).deletingPathExtension.lowercased() })
+        var candidate = base
         var counter = 2
-        while existing.contains(candidate.lowercased()) {
-            candidate = "\(base) \(counter).\(fileExtension)"
+        while existingTitles.contains(candidate.lowercased()) {
+            candidate = "\(base) \(counter)"
             counter += 1
         }
-        return candidate
+        return candidate + "." + fileExtension
     }
 
     /// Turns an arbitrary title into something that is safe to use as a file name.

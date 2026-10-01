@@ -36,6 +36,11 @@ printf 'Ideas for the talk: short slides, lots of pictures.\n' > "$DEMO/Talk not
 touch -t 202609240930 "$DEMO/Dentist.txt"
 touch -t 202609201200 "$DEMO/Holiday Lake Garda.md"
 
+# A temporary (local-only) note, so the separate sidebar section shows up.
+TEMP_DIR="$HOME/Library/Application Support/NoteIt/Temporary"
+mkdir -p "$TEMP_DIR"
+printf 'Call Anna back about the tickets.\nCode for the parcel locker: 4711\n' > "$TEMP_DIR/Quick scratch.md"
+
 APP_BIN="build/NoteIt.app/Contents/MacOS/NoteIt"
 shoot() {
   local mode="$1" language="$2" name="$3"

@@ -1,5 +1,13 @@
 import Foundation
 
+/// Where a note lives.
+public enum NoteLocation: String, Sendable, Hashable {
+    /// The notes folder: synced via Dropbox/Google Drive and Simplenote.
+    case permanent
+    /// The local scratch folder: never synced, cleaned up after a while.
+    case temporary
+}
+
 /// A single note, backed by one plain text file (`.md` or `.txt`) in the notes folder.
 ///
 /// Like in nvALT, the file name (without extension) is the note title and the
@@ -10,14 +18,27 @@ public struct Note: Identifiable, Equatable, Hashable, Sendable {
     public var body: String
     public var creationDate: Date
     public var modificationDate: Date
+    public var location: NoteLocation
 
-    public var id: String { fileName }
+    /// Unique across both locations (a permanent and a temporary note may share a file name).
+    public var id: String {
+        location == .temporary ? "temporary/" + fileName : fileName
+    }
 
-    public init(fileName: String, body: String, creationDate: Date = Date(), modificationDate: Date = Date()) {
+    public var isTemporary: Bool { location == .temporary }
+
+    public init(
+        fileName: String,
+        body: String,
+        creationDate: Date = Date(),
+        modificationDate: Date = Date(),
+        location: NoteLocation = .permanent
+    ) {
         self.fileName = fileName
         self.body = body
         self.creationDate = creationDate
         self.modificationDate = modificationDate
+        self.location = location
     }
 
     /// The note title, i.e. the file name without its extension.

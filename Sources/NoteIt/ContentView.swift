@@ -48,16 +48,29 @@ struct ContentView: View {
                 text: $model.query,
                 focusRequest: model.searchFocusRequest,
                 onSubmit: { model.submitSearch() },
+                onSubmitTemporary: { model.newTemporaryNote() },
                 onMove: { model.moveSelection(by: $0) },
                 onCancel: { model.cancelSearch() }
             )
             .frame(minWidth: 220, idealWidth: 400, maxWidth: 480)
         }
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {
-                model.newNote()
+            Menu {
+                Button {
+                    model.newNote()
+                } label: {
+                    Label(L10n.tr(.newNote), systemImage: "square.and.pencil")
+                }
+                Button {
+                    model.newTemporaryNote()
+                } label: {
+                    Label(L10n.tr(.newTemporaryNote), systemImage: "hourglass")
+                }
+                .help(L10n.tr(.newTemporaryNoteHelp))
             } label: {
                 Label(L10n.tr(.newNote), systemImage: "square.and.pencil")
+            } primaryAction: {
+                model.newNote()
             }
             .help(L10n.tr(.newNoteHelp))
 
@@ -88,30 +101,54 @@ struct ContentView: View {
 
 struct NoteSidebar: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage("temporarySectionExpanded") private var temporaryExpanded = true
 
     var body: some View {
         List(selection: $model.selectedID) {
-            ForEach(model.visibleNotes) { note in
-                NoteRow(note: note)
-                    .tag(note.id)
-                    .contextMenu {
-                        Button(L10n.tr(.rename)) {
-                            model.selectedID = note.id
-                            model.requestTitleEditing()
-                        }
-                        Button(L10n.tr(.showInFinder)) {
-                            model.selectedID = note.id
-                            model.revealSelectedInFinder()
-                        }
-                        Divider()
-                        Button(L10n.tr(.moveToTrash), role: .destructive) { model.deleteTarget = note }
-                    }
+            if model.visibleTemporaryNotes.isEmpty {
+                rows(for: model.visiblePermanentNotes)
+            } else {
+                // Temporary notes get their own, clearly marked section above the regular notes.
+                Section(isExpanded: $temporaryExpanded) {
+                    rows(for: model.visibleTemporaryNotes)
+                } header: {
+                    TemporarySectionHeader()
+                }
+                Section {
+                    rows(for: model.visiblePermanentNotes)
+                } header: {
+                    Text(L10n.tr(.notesSection))
+                }
             }
         }
         .listStyle(.sidebar)
         .onDeleteCommand { model.beginDelete() }
         .overlay { emptyState }
         .safeAreaInset(edge: .bottom, spacing: 0) { footer }
+    }
+
+    private func rows(for notes: [Note]) -> some View {
+        ForEach(notes) { note in
+            NoteRow(note: note, daysRemaining: model.daysRemaining(for: note))
+                .tag(note.id)
+                .contextMenu {
+                    if note.isTemporary {
+                        Button(L10n.tr(.keepPermanently)) { model.makePermanent(note) }
+                            .help(L10n.tr(.keepPermanentlyHelp))
+                        Divider()
+                    }
+                    Button(L10n.tr(.rename)) {
+                        model.selectedID = note.id
+                        model.requestTitleEditing()
+                    }
+                    Button(L10n.tr(.showInFinder)) {
+                        model.selectedID = note.id
+                        model.revealSelectedInFinder()
+                    }
+                    Divider()
+                    Button(L10n.tr(.moveToTrash), role: .destructive) { model.deleteTarget = note }
+                }
+        }
     }
 
     @ViewBuilder
@@ -129,9 +166,14 @@ struct NoteSidebar: View {
                 ContentUnavailableView {
                     Label(L10n.tr(.noMatchesTitle), systemImage: "magnifyingglass")
                 } description: {
-                    Text(L10n.tr(.noMatchesDescriptionFormat, model.query))
+                    Text(L10n.tr(.noMatchesDescriptionFormat, model.query) + "\n" + L10n.tr(.noMatchesTemporaryHint))
                 } actions: {
                     Button(L10n.tr(.createFormat, model.query)) { model.submitSearch() }
+                    Button {
+                        model.newTemporaryNote()
+                    } label: {
+                        Label(L10n.tr(.newTemporaryNote), systemImage: "hourglass")
+                    }
                 }
             }
         }
@@ -158,24 +200,60 @@ struct NoteSidebar: View {
     private var countLabel: String {
         let total = model.notes.count
         if model.query.trimmingCharacters(in: .whitespaces).isEmpty {
-            return total == 1 ? L10n.tr(.noteCountOne) : L10n.tr(.noteCountOther, total)
+            let temporary = model.temporaryNoteCount
+            let permanent = total - temporary
+            let label = permanent == 1 ? L10n.tr(.noteCountOne) : L10n.tr(.noteCountOther, permanent)
+            return temporary > 0 ? label + " · " + L10n.tr(.temporaryCountFormat, temporary) : label
         }
         return L10n.tr(.filteredCountFormat, model.visibleNotes.count, total)
     }
 }
 
+/// Header of the sidebar section for temporary notes.
+struct TemporarySectionHeader: View {
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "hourglass")
+            Text(L10n.tr(.temporarySection))
+            Text("· " + L10n.tr(.sectionNotSynced))
+                .fontWeight(.regular)
+                .foregroundStyle(.secondary)
+        }
+        .foregroundStyle(.orange)
+    }
+}
+
 struct NoteRow: View {
     let note: Note
+    /// Days until a temporary note is cleaned up (`nil`: permanent or kept forever).
+    var daysRemaining: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(note.title)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
+            HStack(spacing: 4) {
+                if note.isTemporary {
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
+                Text(note.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(ShortDate.string(for: note.modificationDate))
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+                if let daysRemaining {
+                    Text(daysRemaining == 0 ? L10n.tr(.todayShort) : L10n.tr(.daysShortFormat, daysRemaining))
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color.orange.opacity(0.15)))
+                        .fixedSize()
+                } else {
+                    Text(ShortDate.string(for: note.modificationDate))
+                        .foregroundStyle(.secondary)
+                        .fixedSize()
+                }
                 Text(note.snippet.isEmpty ? L10n.tr(.noAdditionalText) : note.snippet)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
@@ -284,6 +362,10 @@ struct TitleHeader: View {
             Text(subtitle)
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            if note.isTemporary {
+                TemporaryBanner(note: note)
+                    .padding(.top, 6)
+            }
         }
         .frame(maxWidth: narrowColumn && model.viewMode == .edit ? 720 : .infinity, alignment: .leading)
         .padding(.horizontal, 28)
@@ -390,5 +472,44 @@ enum ShortDate {
         if calendar.isDateInToday(value) { return L10n.tr(.todayAtFormat, time.string(from: value)) }
         if calendar.isDateInYesterday(value) { return L10n.tr(.yesterdayAtFormat, time.string(from: value)) }
         return longDate.string(from: value)
+    }
+}
+
+/// Shown above a temporary note: it is local only, when it goes away, and how to keep it.
+struct TemporaryBanner: View {
+    @EnvironmentObject private var model: AppModel
+    let note: Note
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hourglass")
+            Text(text)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button(L10n.tr(.keepPermanently)) { model.makePermanent(note) }
+                .controlSize(.small)
+                .help(L10n.tr(.keepPermanentlyHelp))
+        }
+        .font(.callout)
+        .foregroundStyle(.orange)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.1)))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.orange.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        )
+    }
+
+    private var text: String {
+        var parts = [L10n.tr(.temporaryBanner)]
+        switch model.daysRemaining(for: note) {
+        case .none: break
+        case .some(0): parts.append(L10n.tr(.expiresToday))
+        case .some(1): parts.append(L10n.tr(.expiresInOneDay))
+        case .some(let days): parts.append(L10n.tr(.expiresInDaysFormat, days))
+        }
+        return parts.joined(separator: " · ")
     }
 }

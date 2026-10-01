@@ -29,6 +29,7 @@ enum WelcomeNote {
     - Everything is saved automatically – as a plain `.md` or `.txt` file.
     - **⌘1 · ⌘2 · ⌘3** switch between Write, Split and Preview.
     - Link notes with double square brackets: [[My first note]]
+    - **⌘⇧N** (or **⌥⏎** in the search field) creates a *temporary* note: it stays on this Mac, is never synced and is cleaned up after a while.
 
     > Tip: put the notes folder in Dropbox or Google Drive (Settings → Storage) and your notes go wherever you go. Connect Simplenote under Settings → Simplenote.
 
@@ -53,6 +54,7 @@ enum WelcomeNote {
     - Alles wird automatisch gespeichert – als normale `.md`- oder `.txt`-Datei.
     - **⌘1 · ⌘2 · ⌘3** wechseln zwischen Schreiben, geteilter Ansicht und Vorschau.
     - Verlinke Notizen mit doppelten eckigen Klammern: [[Meine erste Notiz]]
+    - **⌘⇧N** (oder **⌥⏎** im Suchfeld) legt eine *temporäre* Notiz an: Sie bleibt auf diesem Mac, wird nie synchronisiert und nach einer Weile aufgeräumt.
 
     > Tipp: Lege den Notizordner in Dropbox oder Google Drive (Einstellungen → Speicherort), dann sind deine Notizen überall dabei. Simplenote verbindest du unter Einstellungen → Simplenote.
 
@@ -77,6 +79,7 @@ enum WelcomeNote {
     - Tout est enregistré automatiquement, sous forme de simple fichier `.md` ou `.txt`.
     - **⌘1 · ⌘2 · ⌘3** passent de Écrire à Partagé et à Aperçu.
     - Reliez vos notes avec des doubles crochets : [[Ma première note]]
+    - **⌘⇧N** (ou **⌥⏎** dans le champ de recherche) crée une note *temporaire* : elle reste sur ce Mac, n’est jamais synchronisée et est supprimée au bout d’un moment.
 
     > Astuce : placez le dossier des notes dans Dropbox ou Google Drive (Réglages → Stockage) et vos notes vous suivent partout. Connectez Simplenote dans Réglages → Simplenote.
 
@@ -101,6 +104,7 @@ enum WelcomeNote {
     - Tutto viene salvato automaticamente, come semplice file `.md` o `.txt`.
     - **⌘1 · ⌘2 · ⌘3** passano tra Scrivi, Diviso e Anteprima.
     - Collega le note con doppie parentesi quadre: [[La mia prima nota]]
+    - **⌘⇧N** (o **⌥⏎** nel campo di ricerca) crea una nota *temporanea*: resta su questo Mac, non viene mai sincronizzata e dopo un po’ viene eliminata.
 
     > Suggerimento: metti la cartella delle note in Dropbox o Google Drive (Impostazioni → Archiviazione) e avrai le note sempre con te. Collega Simplenote in Impostazioni → Simplenote.
 
@@ -125,6 +129,7 @@ enum WelcomeNote {
     - Todo se guarda automáticamente como un simple archivo `.md` o `.txt`.
     - **⌘1 · ⌘2 · ⌘3** cambian entre Escribir, Dividido y Vista previa.
     - Enlaza notas con dobles corchetes: [[Mi primera nota]]
+    - **⌘⇧N** (o **⌥⏎** en el campo de búsqueda) crea una nota *temporal*: se queda en este Mac, nunca se sincroniza y se elimina pasado un tiempo.
 
     > Consejo: guarda la carpeta de notas en Dropbox o Google Drive (Ajustes → Almacenamiento) y tendrás tus notas en todas partes. Conecta Simplenote en Ajustes → Simplenote.
 

@@ -86,6 +86,11 @@ public enum L10nKey: CaseIterable, Sendable {
     case simplenoteInvalidCredentials, simplenoteUnauthorized, simplenoteServerErrorFormat, simplenoteInvalidResponse
     case syncReceivedFormat, syncSentFormat, syncDeletedFormat, syncConflictsFormat, syncErrorsFormat, syncUpToDate
     case conflictSuffix, changedDuringSyncFormat
+    // Temporary notes
+    case newTemporaryNote, newTemporaryNoteHelp, temporaryNoteTitle, temporarySection, notesSection, sectionNotSynced
+    case temporaryBanner, expiresToday, expiresInOneDay, expiresInDaysFormat, daysShortFormat, todayShort
+    case keepPermanently, keepPermanentlyHelp, temporaryCountFormat, noMatchesTemporaryHint
+    case temporaryRetentionLabel, retentionNever, retentionAfterOneDay, retentionAfterDaysFormat, retentionHint
 
     public func text(in language: AppLanguage) -> String {
         let t = translations
@@ -328,6 +333,52 @@ public enum L10nKey: CaseIterable, Sendable {
             return ("Up to date", "Alles aktuell", "À jour", "Tutto aggiornato", "Todo al día")
         case .conflictSuffix:
             return (" (Conflict)", " (Konflikt)", " (conflit)", " (conflitto)", " (conflicto)")
+        case .newTemporaryNote:
+            return ("New Temporary Note", "Neue temporäre Notiz", "Nouvelle note temporaire", "Nuova nota temporanea", "Nueva nota temporal")
+        case .newTemporaryNoteHelp:
+            return ("New temporary note – stays on this Mac, not synced (⌘⇧N)", "Neue temporäre Notiz – bleibt auf diesem Mac, wird nicht synchronisiert (⌘⇧N)", "Nouvelle note temporaire – reste sur ce Mac, non synchronisée (⌘⇧N)", "Nuova nota temporanea – resta su questo Mac, non sincronizzata (⌘⇧N)", "Nueva nota temporal – se queda en este Mac, no se sincroniza (⌘⇧N)")
+        case .temporaryNoteTitle:
+            return ("Temporary Note", "Temporäre Notiz", "Note temporaire", "Nota temporanea", "Nota temporal")
+        case .temporarySection:
+            return ("Temporary", "Temporär", "Temporaires", "Temporanee", "Temporales")
+        case .notesSection:
+            return ("Notes", "Notizen", "Notes", "Note", "Notas")
+        case .sectionNotSynced:
+            return ("not synced", "nicht synchronisiert", "non synchronisées", "non sincronizzate", "no sincronizadas")
+        case .temporaryBanner:
+            return ("Temporary note · only on this Mac, not synced", "Temporäre Notiz · nur auf diesem Mac, wird nicht synchronisiert", "Note temporaire · uniquement sur ce Mac, non synchronisée", "Nota temporanea · solo su questo Mac, non sincronizzata", "Nota temporal · solo en este Mac, no se sincroniza")
+        case .expiresToday:
+            return ("moves to the Trash today", "kommt heute in den Papierkorb", "part à la corbeille aujourd’hui", "va nel Cestino oggi", "va a la papelera hoy")
+        case .expiresInOneDay:
+            return ("moves to the Trash in 1 day", "kommt in 1 Tag in den Papierkorb", "part à la corbeille dans 1 jour", "va nel Cestino tra 1 giorno", "va a la papelera en 1 día")
+        case .expiresInDaysFormat:
+            return ("moves to the Trash in {0} days", "kommt in {0} Tagen in den Papierkorb", "part à la corbeille dans {0} jours", "va nel Cestino tra {0} giorni", "va a la papelera en {0} días")
+        case .daysShortFormat:
+            return ("{0} d", "{0} T.", "{0} j", "{0} g", "{0} d")
+        case .todayShort:
+            return ("today", "heute", "auj.", "oggi", "hoy")
+        case .keepPermanently:
+            return ("Keep Permanently", "Dauerhaft behalten", "Conserver définitivement", "Conserva per sempre", "Conservar para siempre")
+        case .keepPermanentlyHelp:
+            return ("Moves the note into your notes folder; from then on it is synced.", "Verschiebt die Notiz in deinen Notizordner, ab dann wird sie synchronisiert.", "Déplace la note dans votre dossier de notes\(nbsp); elle sera ensuite synchronisée.", "Sposta la nota nella cartella delle note; da quel momento viene sincronizzata.", "Mueve la nota a tu carpeta de notas; a partir de entonces se sincroniza.")
+        case .temporaryCountFormat:
+            return ("{0} temporary", "{0} temporär", "{0} temporaire(s)", "{0} temporanee", "{0} temporales")
+        case .noMatchesTemporaryHint:
+            return ("⌥⏎ creates it as a temporary note instead.", "⌥⏎ legt sie stattdessen als temporäre Notiz an.", "⌥⏎ la crée plutôt comme note temporaire.", "⌥⏎ la crea invece come nota temporanea.", "⌥⏎ la crea como nota temporal.")
+        case .temporaryRetentionLabel:
+            return ("Delete temporary notes:", "Temporäre Notizen löschen:", "Supprimer les notes temporaires\(nbsp):", "Elimina le note temporanee:", "Eliminar notas temporales:")
+        case .retentionNever:
+            return ("Never", "Nie", "Jamais", "Mai", "Nunca")
+        case .retentionAfterOneDay:
+            return ("After 1 day without changes", "Nach 1 Tag ohne Änderung", "Après 1 jour sans modification", "Dopo 1 giorno senza modifiche", "Tras 1 día sin cambios")
+        case .retentionAfterDaysFormat:
+            return ("After {0} days without changes", "Nach {0} Tagen ohne Änderung", "Après {0} jours sans modification", "Dopo {0} giorni senza modifiche", "Tras {0} días sin cambios")
+        case .retentionHint:
+            return ("Temporary notes are stored only on this Mac and never synced – neither via Simplenote nor via Dropbox or Google Drive. Deleted notes go to the macOS Trash.",
+                    "Temporäre Notizen liegen nur auf diesem Mac und werden nie synchronisiert – weder über Simplenote noch über Dropbox oder Google Drive. Gelöschte Notizen landen im Papierkorb von macOS.",
+                    "Les notes temporaires sont stockées uniquement sur ce Mac et ne sont jamais synchronisées, ni via Simplenote ni via Dropbox ou Google Drive. Les notes supprimées vont dans la corbeille de macOS.",
+                    "Le note temporanee restano solo su questo Mac e non vengono mai sincronizzate, né tramite Simplenote né tramite Dropbox o Google Drive. Le note eliminate finiscono nel Cestino di macOS.",
+                    "Las notas temporales se guardan solo en este Mac y nunca se sincronizan, ni con Simplenote ni con Dropbox o Google Drive. Las notas eliminadas van a la papelera de macOS.")
         case .changedDuringSyncFormat:
             return ("“{0}” was changed during sync and will be reconciled next time.", "„{0}“ wurde während der Synchronisation geändert und wird beim nächsten Mal abgeglichen.", "«\(nbsp){0}\(nbsp)» a été modifiée pendant la synchronisation et sera rapprochée la prochaine fois.", "“{0}” è stata modificata durante la sincronizzazione e verrà allineata la prossima volta.", "“{0}” se modificó durante la sincronización y se conciliará la próxima vez.")
         }

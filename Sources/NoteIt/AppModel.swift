@@ -41,11 +41,13 @@ final class AppModel: ObservableObject {
         static let didOfferWelcomeNote = "didOfferWelcomeNote"
         static let simplenoteEmail = "simplenoteEmail"
         static let autoSync = "simplenoteAutoSync"
+        static let temporaryRetentionDays = "temporaryRetentionDays"
     }
 
     // MARK: Published state
 
     @Published private(set) var notes: [Note] = [] { didSet { updateVisibleNotes() } }
+    /// Filtered notes in sidebar order: temporary notes first, then permanent ones.
     @Published private(set) var visibleNotes: [Note] = []
     @Published var query = "" { didSet { if query != oldValue { queryChanged() } } }
     @Published var selectedID: Note.ID? { didSet { if selectedID != oldValue { selectionChanged() } } }
@@ -56,6 +58,14 @@ final class AppModel: ObservableObject {
         didSet {
             defaults.set(defaultExtension, forKey: Keys.defaultExtension)
             store.defaultExtension = defaultExtension
+            temporaryStore.defaultExtension = defaultExtension
+        }
+    }
+    /// Days without changes after which temporary notes go to the Trash (0 = never).
+    @Published var temporaryRetentionDays: Int {
+        didSet {
+            defaults.set(temporaryRetentionDays, forKey: Keys.temporaryRetentionDays)
+            cleanUpExpiredTemporaryNotes()
         }
     }
 
@@ -82,9 +92,12 @@ final class AppModel: ObservableObject {
     // MARK: Private state
 
     private let defaults = UserDefaults.standard
+    /// The notes folder (synced).
     private var store: NoteFileStore
-    /// File name of the note currently shown in the editor.
-    private var editingFileName: String?
+    /// Local scratch folder for temporary notes (never synced).
+    private var temporaryStore: NoteFileStore
+    /// ID of the note currently shown in the editor.
+    private var editingID: Note.ID?
     private var hasUnsavedChanges = false
     private var autosaveTask: Task<Void, Never>?
     private var folderMonitor: FolderMonitor?
@@ -92,6 +105,7 @@ final class AppModel: ObservableObject {
     private var syncTimer: Timer?
     private var syncSoonTask: Task<Void, Never>?
     private var knownTitles: Set<String> = []
+    private var cleanupTimer: Timer?
 
     private init() {
         let defaults = UserDefaults.standard
@@ -106,9 +120,20 @@ final class AppModel: ObservableObject {
         viewMode = defaults.string(forKey: Keys.viewMode).flatMap(ViewMode.init(rawValue:)) ?? .edit
         autoSync = defaults.object(forKey: Keys.autoSync) as? Bool ?? true
         store = NoteFileStore(folder: folder, defaultExtension: fileExtension)
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        temporaryStore = NoteFileStore(
+            folder: TemporaryNotes.folder(in: support),
+            defaultExtension: fileExtension,
+            location: .temporary
+        )
+        temporaryRetentionDays = defaults.object(forKey: Keys.temporaryRetentionDays) as? Int ?? TemporaryNotes.defaultRetentionDays
         simplenoteAccount = defaults.string(forKey: Keys.simplenoteEmail)
 
         reloadFromDisk()
+        cleanUpExpiredTemporaryNotes()
+        cleanupTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { _ in
+            Task { @MainActor in AppModel.shared.cleanUpExpiredTemporaryNotes() }
+        }
         createWelcomeNoteIfNeeded()
         startMonitoring()
         configureSyncEngine()
@@ -121,7 +146,7 @@ final class AppModel: ObservableObject {
 
     /// On the very first launch with an empty folder, leave a short guide as the first note.
     private func createWelcomeNoteIfNeeded() {
-        guard notes.isEmpty, !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
+        guard !notes.contains(where: { !$0.isTemporary }), !defaults.bool(forKey: Keys.didOfferWelcomeNote) else { return }
         defaults.set(true, forKey: Keys.didOfferWelcomeNote)
         if let note = try? store.create(title: L10n.tr(.welcomeTitle), body: WelcomeNote.body(for: L10n.language), fileExtension: "md") {
             notes.append(note)
@@ -170,12 +195,26 @@ final class AppModel: ObservableObject {
         return note
     }
 
+    var visibleTemporaryNotes: [Note] { visibleNotes.filter(\.isTemporary) }
+    var visiblePermanentNotes: [Note] { visibleNotes.filter { !$0.isTemporary } }
+    var temporaryNoteCount: Int { notes.lazy.filter(\.isTemporary).count }
+
+    /// Days until a temporary note goes to the Trash (`nil` for permanent notes or "never").
+    func daysRemaining(for note: Note) -> Int? {
+        TemporaryNotes.daysRemaining(of: note, retentionDays: temporaryRetentionDays)
+    }
+
+    private func fileStore(for note: Note) -> NoteFileStore {
+        note.isTemporary ? temporaryStore : store
+    }
+
     func noteExists(title: String) -> Bool {
         knownTitles.contains(NoteFileStore.sanitizedTitle(title).lowercased())
     }
 
     private func updateVisibleNotes() {
-        visibleNotes = NoteSearch.filter(notes, query: query)
+        let filtered = NoteSearch.filter(notes, query: query)
+        visibleNotes = filtered.filter(\.isTemporary) + filtered.filter { !$0.isTemporary }
         knownTitles = Set(notes.map { $0.title.lowercased() })
     }
 
@@ -214,6 +253,50 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// ⌘⇧N / ⌥⏎: like `newNote()`, but the note stays local and is never synced.
+    func newTemporaryNote() {
+        let title = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty {
+            if createNote(title: title, temporary: true) != nil { editorFocusRequest += 1 }
+        } else if createNote(title: L10n.tr(.temporaryNoteTitle), temporary: true) != nil {
+            titleFocusPending = true
+        }
+    }
+
+    /// Moves a temporary note into the notes folder, from where it is synced.
+    func makePermanent(_ note: Note) {
+        saveNow()
+        guard let current = notes.first(where: { $0.id == note.id }), current.isTemporary else { return }
+        do {
+            let moved = try temporaryStore.move(current, to: store)
+            if let index = notes.firstIndex(where: { $0.id == current.id }) {
+                notes[index] = moved
+            }
+            if editingID == current.id {
+                editingID = moved.id
+                selectedID = moved.id
+            }
+            scheduleSyncSoon()
+        } catch {
+            show(error)
+        }
+    }
+
+    /// Moves temporary notes that were not changed for the retention period to the Trash.
+    func cleanUpExpiredTemporaryNotes() {
+        for note in TemporaryNotes.expired(in: notes, retentionDays: temporaryRetentionDays) {
+            // Never pull a note away while it is being edited.
+            if note.id == editingID, hasUnsavedChanges { continue }
+            do {
+                try temporaryStore.delete(note)
+                notes.removeAll { $0.id == note.id }
+                if selectedID == note.id { selectedID = nil }
+            } catch {
+                show(error)
+            }
+        }
+    }
+
     func requestTitleEditing() {
         guard selectedNote != nil else { return }
         titleFocusPending = true
@@ -249,9 +332,9 @@ final class AppModel: ObservableObject {
     // MARK: - Editing and autosave
 
     private func selectionChanged() {
-        guard selectedID != editingFileName else { return }
+        guard selectedID != editingID else { return }
         saveNow()
-        editingFileName = selectedID
+        editingID = selectedID
         hasUnsavedChanges = false
         // Set the text without triggering autosave.
         let newText = selectedNote?.body ?? ""
@@ -265,7 +348,7 @@ final class AppModel: ObservableObject {
     private var loadingEditorText = false
 
     private func editorTextChanged() {
-        guard !loadingEditorText, editingFileName != nil else { return }
+        guard !loadingEditorText, editingID != nil else { return }
         hasUnsavedChanges = true
         autosaveTask?.cancel()
         autosaveTask = Task { [weak self] in
@@ -278,14 +361,14 @@ final class AppModel: ObservableObject {
     /// Writes pending editor changes to disk immediately.
     func saveNow() {
         autosaveTask?.cancel()
-        guard hasUnsavedChanges, let fileName = editingFileName,
-              let index = notes.firstIndex(where: { $0.fileName == fileName }) else { return }
+        guard hasUnsavedChanges, let id = editingID,
+              let index = notes.firstIndex(where: { $0.id == id }) else { return }
         var note = notes[index]
         note.body = editorText
         do {
-            notes[index] = try store.save(note)
+            notes[index] = try fileStore(for: note).save(note)
             hasUnsavedChanges = false
-            scheduleSyncSoon()
+            if !note.isTemporary { scheduleSyncSoon() }
         } catch {
             show(error)
         }
@@ -294,13 +377,13 @@ final class AppModel: ObservableObject {
     // MARK: - Note operations
 
     @discardableResult
-    func createNote(title: String, body: String = "") -> Note? {
+    func createNote(title: String, body: String = "", temporary: Bool = false) -> Note? {
         saveNow()
         do {
-            let note = try store.create(title: title, body: body)
+            let note = try (temporary ? temporaryStore : store).create(title: title, body: body)
             notes.append(note)
             selectedID = note.id
-            scheduleSyncSoon()
+            if !temporary { scheduleSyncSoon() }
             return note
         } catch {
             show(error)
@@ -316,15 +399,16 @@ final class AppModel: ObservableObject {
         saveNow()
         guard let current = notes.first(where: { $0.id == noteID }) else { return }
         do {
-            let renamed = try store.rename(current, to: newTitle)
+            let renamed = try fileStore(for: current).rename(current, to: newTitle)
             guard renamed.fileName != current.fileName else { return }
             if let index = notes.firstIndex(where: { $0.id == current.id }) {
                 notes[index] = renamed
             }
-            if editingFileName == current.fileName {
-                editingFileName = renamed.fileName
+            if editingID == current.id {
+                editingID = renamed.id
                 selectedID = renamed.id
             }
+            guard !current.isTemporary else { return }
             if let engine = syncEngine {
                 let oldName = current.fileName, newName = renamed.fileName
                 Task { await engine.noteRenamed(from: oldName, to: newName) }
@@ -340,18 +424,18 @@ final class AppModel: ObservableObject {
     }
 
     func delete(_ note: Note) {
-        if note.id == editingFileName {
+        if note.id == editingID {
             hasUnsavedChanges = false
             autosaveTask?.cancel()
         }
         do {
-            try store.delete(note)
+            try fileStore(for: note).delete(note)
             let nextSelection = neighbour(of: note)
             notes.removeAll { $0.id == note.id }
             if selectedID == note.id {
                 selectedID = nextSelection?.id
             }
-            scheduleSyncSoon()
+            if !note.isTemporary { scheduleSyncSoon() }
         } catch {
             show(error)
         }
@@ -365,7 +449,7 @@ final class AppModel: ObservableObject {
 
     func revealSelectedInFinder() {
         guard let note = selectedNote else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([store.fileURL(for: note.fileName)])
+        NSWorkspace.shared.activateFileViewerSelecting([fileStore(for: note).fileURL(for: note.fileName)])
     }
 
     /// A `[[Wiki Link]]` in the preview was clicked.
@@ -399,10 +483,11 @@ final class AppModel: ObservableObject {
 
     func reloadFromDisk() {
         do {
-            let loaded = try store.loadAll()
+            let loaded = try store.loadAll() + temporaryStore.loadAll()
+            let previous = editingID.flatMap { id in notes.first { $0.id == id } }
             notes = loaded
-            guard let fileName = editingFileName else { return }
-            if let current = loaded.first(where: { $0.fileName == fileName }) {
+            guard let id = editingID else { return }
+            if let current = loaded.first(where: { $0.id == id }) {
                 // Pick up external changes (Dropbox, Google Drive, other editors) unless we are mid-edit.
                 if !hasUnsavedChanges, current.body != editorText {
                     loadingEditorText = true
@@ -414,8 +499,11 @@ final class AppModel: ObservableObject {
                 selectedID = nil
             } else {
                 // The file disappeared while we still have unsaved text: recreate it.
-                notes.append(Note(fileName: fileName, body: editorText))
-                saveNow()
+                if var recreated = previous {
+                    recreated.body = editorText
+                    notes.append(recreated)
+                    saveNow()
+                }
             }
         } catch {
             show(error)

@@ -4,7 +4,7 @@
 
 A fast note-taking app for macOS in the spirit of **nvALT** / Notational Velocity, written in Swift (SwiftUI + AppKit).
 
-**Version 0.3.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · License: [GPL 3.0](LICENSE)
+**Version 0.4.0** · © 2026 Patrick Walter · [www.gummipunkt.eu](https://www.gummipunkt.eu) · [noteit@gummipunkt.eu](mailto:noteit@gummipunkt.eu) · License: [GPL 3.0](LICENSE)
 
 Available in English, German, French, Italian and Spanish. · [Deutsche Anleitung](README.de.md)
 
@@ -19,6 +19,15 @@ NoteIt is not notarized by Apple yet. On first launch macOS may refuse to open i
 - **Fastest way (like nvALT):** click the search field at the top (or press ⌘L), type a title and press ⏎. If no note with that title exists, it is created and you keep typing in the editor.
 - **Button or ⌘N:** the “New Note” button (pencil icon) in the toolbar creates a “New Note”. Just type over the selected title and confirm with ⏎.
 - You can rename a note at any time via the large title above the text (or ⌘R).
+
+## Temporary notes
+
+For quick scratch notes that should never leave this Mac: **⌘⇧N**, **⌥⏎** in the search field, or the arrow next to the “New Note” button.
+
+- They live in `~/Library/Application Support/NoteIt/Temporary`, outside the notes folder, so they are **never synced** – neither via Simplenote nor via Dropbox or Google Drive.
+- They are clearly separated: their own **“Temporary · not synced”** section at the top of the sidebar (orange, hourglass icon), and a dashed banner above the note showing how many days are left.
+- By default they move to the Trash after **7 days without changes**. Choose never / 1 / 7 / 30 days in Settings → General.
+- **Keep Permanently** (banner, context menu or Note menu) moves a temporary note into the notes folder; from then on it is synced like any other note.
 
 ## Features
 
@@ -39,6 +48,7 @@ NoteIt is not notarized by Apple yet. On first launch macOS may refuse to open i
 | Shortcut | Action |
 |---|---|
 | ⌘N | New note (uses the search text as title, if any) |
+| ⌘⇧N / ⌥⏎ in the search field | New temporary note (local only, never synced) |
 | ⌘L | Go to the search field |
 | ⏎ in the search field | Open or create the note, then continue in the editor |
 | ↑ / ↓ in the search field | Previous / next note |
